@@ -25,7 +25,7 @@ fun persistSessionDataEvents(context: Context, dataEvents: DataEventBuffer, exec
         jsonPayloads.forEach { json ->
             try {
                 val (session, shots) = parseSessionJson(json)
-                db.replaceSession(session, shots)
+                db.mergeIncomingSession(session, shots)
             } catch (e: Exception) {
                 Log.e(TAG, "failed to persist session payload", e)
             }

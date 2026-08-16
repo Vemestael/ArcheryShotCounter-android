@@ -101,7 +101,7 @@ class MainActivity : ComponentActivity() {
                             DataMapItem.fromDataItem(item).dataMap.getString("json")?.let { json ->
                                 try {
                                     val (session, shots) = parseSessionJson(json)
-                                    db.replaceSession(session, shots)
+                                    db.mergeIncomingSession(session, shots)
                                 } catch (_: Exception) {
                                     // skip malformed item, keep syncing the rest
                                 }

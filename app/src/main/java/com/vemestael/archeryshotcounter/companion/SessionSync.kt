@@ -10,7 +10,9 @@ fun parseSessionJson(json: String): Pair<Session, List<Shot>> {
         startTime = obj.getLong("startTime"),
         lastShotTime = obj.getLong("lastShotTime"),
         shotCount = obj.getInt("shotCount"),
-        shotsPerEndAtStart = obj.optInt("shotsPerEndAtStart", 0)
+        shotsPerEndAtStart = obj.optInt("shotsPerEndAtStart", 0),
+        lastModified = obj.optLong("lastModified", 0L),
+        deletedAt = if (obj.isNull("deletedAt")) null else obj.optLong("deletedAt")
     )
     val shotsArray = obj.getJSONArray("shots")
     val shots = List(shotsArray.length()) { i ->

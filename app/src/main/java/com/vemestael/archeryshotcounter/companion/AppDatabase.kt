@@ -8,11 +8,19 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Upsert
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Dao
 interface SessionDao {
-    @Query("SELECT * FROM sessions ORDER BY startTime DESC")
+    @Query("SELECT * FROM sessions WHERE deletedAt IS NULL ORDER BY startTime DESC")
     fun getAll(): List<Session>
+
+    @Query("SELECT * FROM sessions")
+    fun getAllIncludingDeleted(): List<Session>
+
+    @Query("SELECT * FROM sessions WHERE id = :id")
+    fun getById(id: Long): Session?
 
     @Upsert
     fun insertOrUpdate(session: Session)
@@ -30,7 +38,14 @@ interface ShotDao {
     fun deleteAllForSession(sessionId: Long)
 }
 
-@Database(entities = [Session::class, Shot::class], version = 1, exportSchema = false)
+private val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE `sessions` ADD COLUMN `lastModified` INTEGER NOT NULL DEFAULT 0")
+        database.execSQL("ALTER TABLE `sessions` ADD COLUMN `deletedAt` INTEGER")
+    }
+}
+
+@Database(entities = [Session::class, Shot::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
     abstract fun shotDao(): ShotDao
@@ -44,15 +59,22 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "archery-companion.db"
-                ).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2)
+                    .build().also { instance = it }
             }
     }
 
-    fun replaceSession(session: Session, shots: List<Shot>) {
+    /** Applies an incoming session from the watch only if it's newer (last-write-wins,
+     * tombstones included) than whatever's stored locally under the same id. */
+    fun mergeIncomingSession(incoming: Session, incomingShots: List<Shot>) {
         runInTransaction {
-            sessionDao().insertOrUpdate(session)
-            shotDao().deleteAllForSession(session.id)
-            if (shots.isNotEmpty()) shotDao().insertAll(shots)
+            val local = sessionDao().getById(incoming.id)
+            if (local != null && local.lastModified >= incoming.lastModified) return@runInTransaction
+            sessionDao().insertOrUpdate(incoming)
+            shotDao().deleteAllForSession(incoming.id)
+            if (incoming.deletedAt == null && incomingShots.isNotEmpty()) {
+                shotDao().insertAll(incomingShots)
+            }
         }
     }
 }
