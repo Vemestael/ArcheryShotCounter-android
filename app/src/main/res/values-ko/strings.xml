@@ -24,8 +24,6 @@
     <string name="clear_data_confirm">지우기</string>
     <string name="clear_data_success">지웠습니다</string>
 
-    <string name="data_menu">데이터</string>
-    <string name="data_dialog_title">내보내기 / 가져오기</string>
     <string name="format_json">JSON</string>
     <string name="format_csv">CSV</string>
     <string name="export_button">내보내기</string>
@@ -34,4 +32,7 @@
     <string name="export_failed">내보내기 실패</string>
     <string name="import_success">%1$d개 세션을 가져왔습니다</string>
     <string name="import_failed">가져오기 실패</string>
+
+    <string name="lang_menu">언어</string>
+    <string name="lang_system">시스템</string>
 </resources>

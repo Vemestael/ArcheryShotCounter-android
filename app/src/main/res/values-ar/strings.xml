@@ -24,8 +24,6 @@
     <string name="clear_data_confirm">مسح</string>
     <string name="clear_data_success">تم المسح</string>
 
-    <string name="data_menu">البيانات</string>
-    <string name="data_dialog_title">تصدير / استيراد</string>
     <string name="format_json">JSON</string>
     <string name="format_csv">CSV</string>
     <string name="export_button">تصدير</string>
@@ -34,4 +32,7 @@
     <string name="export_failed">فشل التصدير</string>
     <string name="import_success">تم استيراد %1$d جلسة</string>
     <string name="import_failed">فشل الاستيراد</string>
+
+    <string name="lang_menu">اللغة</string>
+    <string name="lang_system">النظام</string>
 </resources>

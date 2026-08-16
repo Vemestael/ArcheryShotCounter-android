@@ -24,8 +24,6 @@
     <string name="clear_data_confirm">Löschen</string>
     <string name="clear_data_success">Gelöscht</string>
 
-    <string name="data_menu">Daten</string>
-    <string name="data_dialog_title">Export / Import</string>
     <string name="format_json">JSON</string>
     <string name="format_csv">CSV</string>
     <string name="export_button">Exportieren</string>
@@ -34,4 +32,7 @@
     <string name="export_failed">Export fehlgeschlagen</string>
     <string name="import_success">%1$d Sitzungen importiert</string>
     <string name="import_failed">Import fehlgeschlagen</string>
+
+    <string name="lang_menu">Sprache</string>
+    <string name="lang_system">System</string>
 </resources>

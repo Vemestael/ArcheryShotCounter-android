@@ -1,5 +1,7 @@
 package com.vemestael.archeryshotcounter.companion
 
+import android.content.Context
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -39,9 +41,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import com.vemestael.archeryshotcounter.R
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataMapItem
@@ -56,7 +60,30 @@ import kotlin.math.roundToInt
 
 enum class DataFormat { JSON, CSV }
 
+private const val PREFS_NAME = "settings"
+private const val KEY_LANGUAGE = "language"
+
 class MainActivity : ComponentActivity() {
+
+    private var currentLanguage = AppLanguage.SYSTEM
+
+    override fun attachBaseContext(newBase: Context) {
+        val code = newBase.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString(KEY_LANGUAGE, AppLanguage.SYSTEM.code) ?: AppLanguage.SYSTEM.code
+        currentLanguage = AppLanguage.entries.find { it.code == code } ?: AppLanguage.SYSTEM
+        if (code == AppLanguage.SYSTEM.code) {
+            super.attachBaseContext(newBase)
+        } else {
+            val config = Configuration(newBase.resources.configuration)
+            config.setLocale(Locale.forLanguageTag(code))
+            super.attachBaseContext(newBase.createConfigurationContext(config))
+        }
+    }
+
+    private fun changeLanguage(lang: AppLanguage) {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit { putString(KEY_LANGUAGE, lang.code) }
+        recreate()
+    }
 
     private val dbExecutor = Executors.newSingleThreadExecutor()
     private var sessions by mutableStateOf<List<Session>>(emptyList())
@@ -64,7 +91,9 @@ class MainActivity : ComponentActivity() {
     private var isSyncing by mutableStateOf(false)
     private var editingSession by mutableStateOf<Session?>(null)
     private var showClearDataConfirm by mutableStateOf(false)
-    private var showDataDialog by mutableStateOf(false)
+    private var showExportDialog by mutableStateOf(false)
+    private var showImportDialog by mutableStateOf(false)
+    private var showLanguagePicker by mutableStateOf(false)
 
     private var dataStatus by mutableStateOf<String?>(null)
     private val dataStatusHandler = Handler(Looper.getMainLooper())
@@ -93,7 +122,9 @@ class MainActivity : ComponentActivity() {
                         isSyncing = isSyncing,
                         dataStatus = dataStatus,
                         onSync = ::syncData,
-                        onOpenDataDialog = { showDataDialog = true },
+                        onOpenExportDialog = { showExportDialog = true },
+                        onOpenImportDialog = { showImportDialog = true },
+                        onOpenLanguagePicker = { showLanguagePicker = true },
                         onEditSession = { editingSession = it },
                         onClearData = { showClearDataConfirm = true }
                     )
@@ -111,11 +142,23 @@ class MainActivity : ComponentActivity() {
                             onCancel = { showClearDataConfirm = false }
                         )
                     }
-                    if (showDataDialog) {
-                        DataDialog(
-                            onDismiss = { showDataDialog = false },
-                            onExport = ::requestExport,
-                            onImport = ::requestImport
+                    if (showExportDialog) {
+                        ExportDialog(
+                            onDismiss = { showExportDialog = false },
+                            onExport = { format -> requestExport(format); showExportDialog = false }
+                        )
+                    }
+                    if (showImportDialog) {
+                        ImportDialog(
+                            onDismiss = { showImportDialog = false },
+                            onImport = { format -> requestImport(format); showImportDialog = false }
+                        )
+                    }
+                    if (showLanguagePicker) {
+                        LanguagePickerDialog(
+                            currentLanguage = currentLanguage,
+                            onSelect = { changeLanguage(it) },
+                            onDismiss = { showLanguagePicker = false }
                         )
                     }
                 }
@@ -320,7 +363,9 @@ private fun AppScreen(
     isSyncing: Boolean,
     dataStatus: String?,
     onSync: () -> Unit,
-    onOpenDataDialog: () -> Unit,
+    onOpenExportDialog: () -> Unit,
+    onOpenImportDialog: () -> Unit,
+    onOpenLanguagePicker: () -> Unit,
     onEditSession: (Session) -> Unit,
     onClearData: () -> Unit
 ) {
@@ -333,7 +378,9 @@ private fun AppScreen(
                 actions = {
                     TextButton(onClick = { showMenu = true }) { Text("⋮") }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.data_menu)) }, onClick = { showMenu = false; onOpenDataDialog() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.export_button)) }, onClick = { showMenu = false; onOpenExportDialog() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.import_button)) }, onClick = { showMenu = false; onOpenImportDialog() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.lang_menu)) }, onClick = { showMenu = false; onOpenLanguagePicker() })
                         DropdownMenuItem(text = { Text(stringResource(R.string.clear_data_menu)) }, onClick = { showMenu = false; onClearData() })
                     }
                 }
@@ -408,7 +455,8 @@ private fun PullToRefreshHistoryList(
 @Composable
 private fun SessionCard(session: Session, shots: List<Shot>, onClick: () -> Unit) {
     val context = LocalContext.current
-    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val locale = LocalConfiguration.current.locales[0]
+    val dateFormat = remember(locale) { SimpleDateFormat("d MMM", locale) }
     val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
     val avgIntervalSeconds = averageIntervalSeconds(shots)
 
@@ -448,7 +496,8 @@ private fun EditSessionDialog(
         mutableIntStateOf((((session.lastShotTime - session.startTime) / 60_000L).toInt()).coerceAtLeast(0))
     }
     var shotsPerEnd by remember { mutableIntStateOf(session.shotsPerEndAtStart) }
-    val dateFormat = remember(session.startTime) { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val locale = LocalConfiguration.current.locales[0]
+    val dateFormat = remember(session.startTime, locale) { SimpleDateFormat("d MMM", locale) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -498,30 +547,70 @@ private fun ClearDataConfirmDialog(onConfirm: () -> Unit, onCancel: () -> Unit) 
 }
 
 @Composable
-private fun DataDialog(
-    onDismiss: () -> Unit,
-    onExport: (DataFormat) -> Unit,
-    onImport: (DataFormat) -> Unit
-) {
+private fun FormatChooserRow(format: DataFormat, onFormatChange: (DataFormat) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(selected = format == DataFormat.JSON, onClick = { onFormatChange(DataFormat.JSON) }, label = { Text(stringResource(R.string.format_json)) })
+        FilterChip(selected = format == DataFormat.CSV, onClick = { onFormatChange(DataFormat.CSV) }, label = { Text(stringResource(R.string.format_csv)) })
+    }
+}
+
+@Composable
+private fun ExportDialog(onDismiss: () -> Unit, onExport: (DataFormat) -> Unit) {
     var format by remember { mutableStateOf(DataFormat.JSON) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.data_dialog_title)) },
+        title = { Text(stringResource(R.string.export_button)) },
+        text = { FormatChooserRow(format) { format = it } },
+        confirmButton = { TextButton(onClick = { onExport(format) }) { Text(stringResource(R.string.export_button)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) } }
+    )
+}
+
+@Composable
+private fun ImportDialog(onDismiss: () -> Unit, onImport: (DataFormat) -> Unit) {
+    var format by remember { mutableStateOf(DataFormat.JSON) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.import_button)) },
+        text = { FormatChooserRow(format) { format = it } },
+        confirmButton = { TextButton(onClick = { onImport(format) }) { Text(stringResource(R.string.import_button)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) } }
+    )
+}
+
+@Composable
+private fun LanguagePickerDialog(
+    currentLanguage: AppLanguage,
+    onSelect: (AppLanguage) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.lang_menu)) },
         text = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = format == DataFormat.JSON, onClick = { format = DataFormat.JSON }, label = { Text(stringResource(R.string.format_json)) })
-                FilterChip(selected = format == DataFormat.CSV, onClick = { format = DataFormat.CSV }, label = { Text(stringResource(R.string.format_csv)) })
+            Column(modifier = Modifier.fillMaxWidth()) {
+                AppLanguage.entries.forEach { lang ->
+                    val mainName = if (lang == AppLanguage.SYSTEM) stringResource(R.string.lang_system) else lang.nativeName
+                    val subtitle = if (lang != AppLanguage.SYSTEM && lang.nativeName != lang.englishName) lang.englishName else null
+                    TextButton(
+                        onClick = { onSelect(lang) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                if (lang == currentLanguage) "• $mainName" else mainName,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            if (subtitle != null) {
+                                Text(subtitle, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
             }
         },
-        confirmButton = {
-            TextButton(onClick = { onExport(format); onDismiss() }) { Text(stringResource(R.string.export_button)) }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = { onImport(format); onDismiss() }) { Text(stringResource(R.string.import_button)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) }
-            }
-        }
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) } }
     )
 }
 

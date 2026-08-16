@@ -24,8 +24,6 @@
     <string name="clear_data_confirm">消去</string>
     <string name="clear_data_success">消去しました</string>
 
-    <string name="data_menu">データ</string>
-    <string name="data_dialog_title">エクスポート / インポート</string>
     <string name="format_json">JSON</string>
     <string name="format_csv">CSV</string>
     <string name="export_button">エクスポート</string>
@@ -34,4 +32,7 @@
     <string name="export_failed">エクスポートに失敗しました</string>
     <string name="import_success">%1$d 件のセッションをインポートしました</string>
     <string name="import_failed">インポートに失敗しました</string>
+
+    <string name="lang_menu">言語</string>
+    <string name="lang_system">システム</string>
 </resources>
