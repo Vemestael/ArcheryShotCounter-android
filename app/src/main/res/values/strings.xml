@@ -1,3 +1,37 @@
 <resources>
     <string name="app_name">Archery Shot Counter</string>
+
+    <string name="history_empty_title">No synced sessions yet.\nRecord a session on your watch to see it here.</string>
+    <string name="sync_button">Sync data</string>
+    <string name="sync_button_syncing">Syncing…</string>
+
+    <string name="shots_count">%1$d shots</string>
+    <string name="avg_interval">Avg. %1$ds between shots</string>
+    <string name="shots_per_end_count">%1$d shots per end</string>
+
+    <string name="edit_shots">Shots</string>
+    <string name="edit_duration_min">Duration, min</string>
+    <string name="edit_shots_per_end">Shots per end</string>
+    <string name="edit_off">Off</string>
+
+    <string name="save_button">Save</string>
+    <string name="delete_button">Delete</string>
+    <string name="cancel_button">Cancel</string>
+
+    <string name="clear_data_menu">Clear data</string>
+    <string name="clear_data_title">Clear all data?</string>
+    <string name="clear_data_message">Deletes every session and shot stored on this phone. This does not affect the watch — sync afterwards to restore from there. This can\'t be undone.</string>
+    <string name="clear_data_confirm">Clear</string>
+    <string name="clear_data_success">Cleared</string>
+
+    <string name="data_menu">Data</string>
+    <string name="data_dialog_title">Export / Import</string>
+    <string name="format_json">JSON</string>
+    <string name="format_csv">CSV</string>
+    <string name="export_button">Export</string>
+    <string name="import_button">Import</string>
+    <string name="export_success">Exported</string>
+    <string name="export_failed">Export failed</string>
+    <string name="import_success">Imported %1$d sessions</string>
+    <string name="import_failed">Import failed</string>
 </resources>

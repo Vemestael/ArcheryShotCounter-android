@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.play.services.wearable)
+    implementation(libs.fragment)
     debugImplementation(libs.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.json)

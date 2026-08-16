@@ -1,10 +1,12 @@
 package com.vemestael.archeryshotcounter.companion
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -36,12 +39,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.vemestael.archeryshotcounter.R
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
-import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -49,8 +54,7 @@ import java.util.Locale
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
-private const val IMPORT_JSON_FILENAME = "archery-import.json"
-private const val IMPORT_CSV_FILENAME = "archery-import.csv"
+enum class DataFormat { JSON, CSV }
 
 class MainActivity : ComponentActivity() {
 
@@ -60,10 +64,23 @@ class MainActivity : ComponentActivity() {
     private var isSyncing by mutableStateOf(false)
     private var editingSession by mutableStateOf<Session?>(null)
     private var showClearDataConfirm by mutableStateOf(false)
+    private var showDataDialog by mutableStateOf(false)
 
     private var dataStatus by mutableStateOf<String?>(null)
     private val dataStatusHandler = Handler(Looper.getMainLooper())
     private val dataStatusHideRunnable = Runnable { dataStatus = null }
+
+    private var pendingImportFormat = DataFormat.JSON
+
+    private val exportJsonLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let { exportTo(it, DataFormat.JSON) }
+    }
+    private val exportCsvLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        uri?.let { exportTo(it, DataFormat.CSV) }
+    }
+    private val importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { importFrom(it, pendingImportFormat) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,10 +93,7 @@ class MainActivity : ComponentActivity() {
                         isSyncing = isSyncing,
                         dataStatus = dataStatus,
                         onSync = ::syncData,
-                        onExportJson = ::exportJson,
-                        onImportJson = ::importJson,
-                        onExportCsv = ::exportCsv,
-                        onImportCsv = ::importCsv,
+                        onOpenDataDialog = { showDataDialog = true },
                         onEditSession = { editingSession = it },
                         onClearData = { showClearDataConfirm = true }
                     )
@@ -95,6 +109,13 @@ class MainActivity : ComponentActivity() {
                         ClearDataConfirmDialog(
                             onConfirm = { confirmClearData(); showClearDataConfirm = false },
                             onCancel = { showClearDataConfirm = false }
+                        )
+                    }
+                    if (showDataDialog) {
+                        DataDialog(
+                            onDismiss = { showDataDialog = false },
+                            onExport = ::requestExport,
+                            onImport = ::requestImport
                         )
                     }
                 }
@@ -214,69 +235,60 @@ class MainActivity : ComponentActivity() {
             runOnUiThread {
                 sessions = emptyList()
                 shotsBySession = emptyMap()
-                showDataStatus("Cleared")
+                showDataStatus(getString(R.string.clear_data_success))
             }
         }
     }
 
-    private fun exportJson() {
+    private fun requestExport(format: DataFormat) {
+        val stamp = SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.US).format(Date())
+        when (format) {
+            DataFormat.JSON -> exportJsonLauncher.launch("archery-export-$stamp.json")
+            DataFormat.CSV -> exportCsvLauncher.launch("archery-export-$stamp.csv")
+        }
+    }
+
+    private fun requestImport(format: DataFormat) {
+        pendingImportFormat = format
+        val mimeTypes = when (format) {
+            DataFormat.JSON -> arrayOf("application/json", "text/*", "*/*")
+            DataFormat.CSV -> arrayOf("text/csv", "text/comma-separated-values", "text/plain", "*/*")
+        }
+        importLauncher.launch(mimeTypes)
+    }
+
+    private fun exportTo(uri: Uri, format: DataFormat) {
         val db = AppDatabase.getInstance(applicationContext)
         dbExecutor.execute {
-            val path = try {
+            val ok = try {
                 val allSessions = db.sessionDao().getAllIncludingDeleted()
                 val shotsAll = db.shotDao().getAll().groupBy { it.sessionId }
-                val json = buildExportJson(allSessions, shotsAll)
-                val dir = getExternalFilesDir(null) ?: throw IOException("no external files dir")
-                val stamp = SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.US).format(Date())
-                val file = File(dir, "archery-export-$stamp.json")
-                file.writeText(json)
-                file.absolutePath
+                val content = when (format) {
+                    DataFormat.JSON -> buildExportJson(allSessions, shotsAll)
+                    DataFormat.CSV -> buildExportCsv(allSessions, shotsAll)
+                }
+                contentResolver.openOutputStream(uri)?.use { it.write(content.toByteArray()) }
+                    ?: throw IOException("no output stream")
+                true
             } catch (e: Exception) {
-                null
+                false
             }
             runOnUiThread {
-                showDataStatus(if (path != null) "Exported to $path" else "Export failed")
+                showDataStatus(getString(if (ok) R.string.export_success else R.string.export_failed))
             }
         }
     }
 
-    private fun exportCsv() {
+    private fun importFrom(uri: Uri, format: DataFormat) {
         val db = AppDatabase.getInstance(applicationContext)
         dbExecutor.execute {
-            val path = try {
-                val allSessions = db.sessionDao().getAllIncludingDeleted()
-                val shotsAll = db.shotDao().getAll().groupBy { it.sessionId }
-                val csv = buildExportCsv(allSessions, shotsAll)
-                val dir = getExternalFilesDir(null) ?: throw IOException("no external files dir")
-                val stamp = SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.US).format(Date())
-                val file = File(dir, "archery-export-$stamp.csv")
-                file.writeText(csv)
-                file.absolutePath
-            } catch (e: Exception) {
-                null
-            }
-            runOnUiThread {
-                showDataStatus(if (path != null) "Exported to $path" else "Export failed")
-            }
-        }
-    }
-
-    private fun importJson() = importFrom(IMPORT_JSON_FILENAME) { parseImportJson(it) }
-
-    private fun importCsv() = importFrom(IMPORT_CSV_FILENAME) { parseImportCsv(it) }
-
-    private fun importFrom(filename: String, parse: (String) -> List<ImportedSession>) {
-        val db = AppDatabase.getInstance(applicationContext)
-        dbExecutor.execute {
-            val dir = getExternalFilesDir(null)
-            val file = dir?.let { File(it, filename) }
-            if (file == null || !file.exists()) {
-                val hint = if (dir != null) File(dir, filename).absolutePath else filename
-                runOnUiThread { showDataStatus("No file found. Place a file at $hint") }
-                return@execute
-            }
-            val success = try {
-                val imported = parse(file.readText())
+            val count = try {
+                val text = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    ?: throw IOException("no input stream")
+                val imported = when (format) {
+                    DataFormat.JSON -> parseImportJson(text)
+                    DataFormat.CSV -> parseImportCsv(text)
+                }
                 imported.forEach { (session, shots) ->
                     db.mergeIncomingSession(session, shots)
                     syncSessionToWatch(session, shots)
@@ -286,7 +298,9 @@ class MainActivity : ComponentActivity() {
                 null
             }
             runOnUiThread {
-                showDataStatus(if (success != null) "Imported $success sessions" else "Import failed")
+                showDataStatus(
+                    if (count != null) getString(R.string.import_success, count) else getString(R.string.import_failed)
+                )
                 reload()
             }
         }
@@ -306,10 +320,7 @@ private fun AppScreen(
     isSyncing: Boolean,
     dataStatus: String?,
     onSync: () -> Unit,
-    onExportJson: () -> Unit,
-    onImportJson: () -> Unit,
-    onExportCsv: () -> Unit,
-    onImportCsv: () -> Unit,
+    onOpenDataDialog: () -> Unit,
     onEditSession: (Session) -> Unit,
     onClearData: () -> Unit
 ) {
@@ -318,15 +329,12 @@ private fun AppScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Archery Shot Counter") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     TextButton(onClick = { showMenu = true }) { Text("⋮") }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(text = { Text("Export JSON") }, onClick = { showMenu = false; onExportJson() })
-                        DropdownMenuItem(text = { Text("Import JSON") }, onClick = { showMenu = false; onImportJson() })
-                        DropdownMenuItem(text = { Text("Export CSV") }, onClick = { showMenu = false; onExportCsv() })
-                        DropdownMenuItem(text = { Text("Import CSV") }, onClick = { showMenu = false; onImportCsv() })
-                        DropdownMenuItem(text = { Text("Clear data") }, onClick = { showMenu = false; onClearData() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.data_menu)) }, onClick = { showMenu = false; onOpenDataDialog() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.clear_data_menu)) }, onClick = { showMenu = false; onClearData() })
                     }
                 }
             )
@@ -359,12 +367,12 @@ private fun HistoryScreen(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "No synced sessions yet.\nRecord a session on your watch to see it here.",
+                    text = stringResource(R.string.history_empty_title),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(32.dp)
                 )
                 Button(onClick = onSync, enabled = !isSyncing) {
-                    Text(if (isSyncing) "Syncing…" else "Sync data")
+                    Text(stringResource(if (isSyncing) R.string.sync_button_syncing else R.string.sync_button))
                 }
             }
         }
@@ -399,22 +407,28 @@ private fun PullToRefreshHistoryList(
 
 @Composable
 private fun SessionCard(session: Session, shots: List<Shot>, onClick: () -> Unit) {
-    val dateFormat = remember(session.startTime) { SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()) }
+    val context = LocalContext.current
+    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
     val avgIntervalSeconds = averageIntervalSeconds(shots)
 
     Card(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(dateFormat.format(Date(session.startTime)), style = MaterialTheme.typography.titleMedium)
-            Text("${session.shotCount} shots", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "${timeFormat.format(Date(session.startTime))} – ${timeFormat.format(Date(session.lastShotTime))}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(stringResource(R.string.shots_count, session.shotCount), style = MaterialTheme.typography.bodyMedium)
             if (avgIntervalSeconds != null) {
                 Text(
-                    "Avg. ${avgIntervalSeconds}s between shots",
+                    stringResource(R.string.avg_interval, avgIntervalSeconds),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
             if (session.shotsPerEndAtStart > 0) {
                 Text(
-                    "${session.shotsPerEndAtStart} shots per end",
+                    stringResource(R.string.shots_per_end_count, session.shotsPerEndAtStart),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -434,16 +448,22 @@ private fun EditSessionDialog(
         mutableIntStateOf((((session.lastShotTime - session.startTime) / 60_000L).toInt()).coerceAtLeast(0))
     }
     var shotsPerEnd by remember { mutableIntStateOf(session.shotsPerEndAtStart) }
-    val dateFormat = remember(session.startTime) { SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()) }
+    val dateFormat = remember(session.startTime) { SimpleDateFormat("d MMM", Locale.getDefault()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(dateFormat.format(Date(session.startTime))) },
         text = {
             Column {
-                StepperRow("Shots", count, onDec = { if (count > 0) count-- }, onInc = { count++ })
-                StepperRow("Duration, min", durationMinutes, onDec = { if (durationMinutes > 0) durationMinutes-- }, onInc = { durationMinutes++ })
-                StepperRow("Shots per end", shotsPerEnd, onDec = { if (shotsPerEnd > 0) shotsPerEnd-- }, onInc = { shotsPerEnd++ }, zeroLabel = "Off")
+                StepperRow(stringResource(R.string.edit_shots), count, onDec = { if (count > 0) count-- }, onInc = { count++ })
+                StepperRow(stringResource(R.string.edit_duration_min), durationMinutes, onDec = { if (durationMinutes > 0) durationMinutes-- }, onInc = { durationMinutes++ })
+                StepperRow(
+                    stringResource(R.string.edit_shots_per_end),
+                    shotsPerEnd,
+                    onDec = { if (shotsPerEnd > 0) shotsPerEnd-- },
+                    onInc = { shotsPerEnd++ },
+                    zeroLabel = stringResource(R.string.edit_off)
+                )
             }
         },
         confirmButton = {
@@ -455,12 +475,12 @@ private fun EditSessionDialog(
                         shotsPerEndAtStart = shotsPerEnd
                     )
                 )
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.save_button)) }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = { onDelete(session) }) { Text("Delete") }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = { onDelete(session) }) { Text(stringResource(R.string.delete_button)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) }
             }
         }
     )
@@ -470,10 +490,38 @@ private fun EditSessionDialog(
 private fun ClearDataConfirmDialog(onConfirm: () -> Unit, onCancel: () -> Unit) {
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("Clear all data?") },
-        text = { Text("Deletes every session and shot stored on this phone. This does not affect the watch — sync afterwards to restore from there. This can't be undone.") },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Clear") } },
-        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } }
+        title = { Text(stringResource(R.string.clear_data_title)) },
+        text = { Text(stringResource(R.string.clear_data_message)) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.clear_data_confirm)) } },
+        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel_button)) } }
+    )
+}
+
+@Composable
+private fun DataDialog(
+    onDismiss: () -> Unit,
+    onExport: (DataFormat) -> Unit,
+    onImport: (DataFormat) -> Unit
+) {
+    var format by remember { mutableStateOf(DataFormat.JSON) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.data_dialog_title)) },
+        text = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = format == DataFormat.JSON, onClick = { format = DataFormat.JSON }, label = { Text(stringResource(R.string.format_json)) })
+                FilterChip(selected = format == DataFormat.CSV, onClick = { format = DataFormat.CSV }, label = { Text(stringResource(R.string.format_csv)) })
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onExport(format); onDismiss() }) { Text(stringResource(R.string.export_button)) }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = { onImport(format); onDismiss() }) { Text(stringResource(R.string.import_button)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) }
+            }
+        }
     )
 }
 
