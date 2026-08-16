@@ -59,6 +59,15 @@ android {
     }
 }
 
+@Suppress("UnstableApiUsage")
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("ArcheryShotCounterCompanion-${output.versionName.get()}.apk")
+        }
+    }
+}
+
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.activity.compose)
