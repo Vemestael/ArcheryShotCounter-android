@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
     private var shotsBySession by mutableStateOf<Map<Long, List<Shot>>>(emptyMap())
     private var isSyncing by mutableStateOf(false)
     private var editingSession by mutableStateOf<Session?>(null)
+    private var showClearDataConfirm by mutableStateOf(false)
 
     private var dataStatus by mutableStateOf<String?>(null)
     private val dataStatusHandler = Handler(Looper.getMainLooper())
@@ -79,7 +80,8 @@ class MainActivity : ComponentActivity() {
                         onImportJson = ::importJson,
                         onExportCsv = ::exportCsv,
                         onImportCsv = ::importCsv,
-                        onEditSession = { editingSession = it }
+                        onEditSession = { editingSession = it },
+                        onClearData = { showClearDataConfirm = true }
                     )
                     editingSession?.let { session ->
                         EditSessionDialog(
@@ -87,6 +89,12 @@ class MainActivity : ComponentActivity() {
                             onSave = { saveSessionEdit(it); editingSession = null },
                             onDelete = { deleteSession(it); editingSession = null },
                             onDismiss = { editingSession = null }
+                        )
+                    }
+                    if (showClearDataConfirm) {
+                        ClearDataConfirmDialog(
+                            onConfirm = { confirmClearData(); showClearDataConfirm = false },
+                            onCancel = { showClearDataConfirm = false }
                         )
                     }
                 }
@@ -196,6 +204,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Local wipe only — deliberately does not push a tombstone for every session, since that
+     * would delete everything on the watch too on next sync. Sync afterwards to restore from
+     * the watch if it still has the data. */
+    private fun confirmClearData() {
+        val db = AppDatabase.getInstance(applicationContext)
+        dbExecutor.execute {
+            db.clearAllLocalData()
+            runOnUiThread {
+                sessions = emptyList()
+                shotsBySession = emptyMap()
+                showDataStatus("Cleared")
+            }
+        }
+    }
+
     private fun exportJson() {
         val db = AppDatabase.getInstance(applicationContext)
         dbExecutor.execute {
@@ -287,7 +310,8 @@ private fun AppScreen(
     onImportJson: () -> Unit,
     onExportCsv: () -> Unit,
     onImportCsv: () -> Unit,
-    onEditSession: (Session) -> Unit
+    onEditSession: (Session) -> Unit,
+    onClearData: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -302,6 +326,7 @@ private fun AppScreen(
                         DropdownMenuItem(text = { Text("Import JSON") }, onClick = { showMenu = false; onImportJson() })
                         DropdownMenuItem(text = { Text("Export CSV") }, onClick = { showMenu = false; onExportCsv() })
                         DropdownMenuItem(text = { Text("Import CSV") }, onClick = { showMenu = false; onImportCsv() })
+                        DropdownMenuItem(text = { Text("Clear data") }, onClick = { showMenu = false; onClearData() })
                     }
                 }
             )
@@ -438,6 +463,17 @@ private fun EditSessionDialog(
                 TextButton(onClick = onDismiss) { Text("Cancel") }
             }
         }
+    )
+}
+
+@Composable
+private fun ClearDataConfirmDialog(onConfirm: () -> Unit, onCancel: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text("Clear all data?") },
+        text = { Text("Deletes every session and shot stored on this phone. This does not affect the watch — sync afterwards to restore from there. This can't be undone.") },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Clear") } },
+        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } }
     )
 }
 

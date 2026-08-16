@@ -24,6 +24,9 @@ interface SessionDao {
 
     @Upsert
     fun insertOrUpdate(session: Session)
+
+    @Query("DELETE FROM sessions")
+    fun deleteAll()
 }
 
 @Dao
@@ -39,6 +42,9 @@ interface ShotDao {
 
     @Query("DELETE FROM shots WHERE sessionId = :sessionId")
     fun deleteAllForSession(sessionId: Long)
+
+    @Query("DELETE FROM shots")
+    fun deleteAll()
 }
 
 private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -78,6 +84,15 @@ abstract class AppDatabase : RoomDatabase() {
             if (incoming.deletedAt == null && incomingShots.isNotEmpty()) {
                 shotDao().insertAll(incomingShots)
             }
+        }
+    }
+
+    /** Pure local wipe — does NOT write tombstones, so it must never be synced as a set of
+     * deletions to the other device (that would wipe the other device's data too). */
+    fun clearAllLocalData() {
+        runInTransaction {
+            shotDao().deleteAll()
+            sessionDao().deleteAll()
         }
     }
 }
