@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import com.vemestael.archeryshotcounter.R
 import com.google.android.gms.wearable.DataClient
@@ -376,7 +377,7 @@ private fun AppScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
-                    TextButton(onClick = { showMenu = true }) { Text("⋮") }
+                    TextButton(onClick = { showMenu = true }) { Text("⋮", fontSize = 28.sp) }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                         DropdownMenuItem(text = { Text(stringResource(R.string.export_button)) }, onClick = { showMenu = false; onOpenExportDialog() })
                         DropdownMenuItem(text = { Text(stringResource(R.string.import_button)) }, onClick = { showMenu = false; onOpenImportDialog() })
