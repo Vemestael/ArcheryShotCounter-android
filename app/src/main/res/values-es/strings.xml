@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Archery Shot Counter</string>
+
+    <string name="history_empty_title">Aún no hay sesiones sincronizadas.\nRegistra una sesión en el reloj para verla aquí.</string>
+    <string name="sync_button">Sincronizar datos</string>
+    <string name="sync_button_syncing">Sincronizando…</string>
+
+    <string name="shots_count">%1$d disparos</string>
+    <string name="avg_interval">Media de %1$d s entre disparos</string>
+    <string name="shots_per_end_count">%1$d disparos por serie</string>
+
+    <string name="edit_shots">Disparos</string>
+    <string name="edit_duration_min">Duración, min</string>
+    <string name="edit_shots_per_end">Disparos por serie</string>
+    <string name="edit_off">Apagado</string>
+
+    <string name="save_button">Guardar</string>
+    <string name="delete_button">Eliminar</string>
+    <string name="cancel_button">Cancelar</string>
+
+    <string name="clear_data_menu">Borrar datos</string>
+    <string name="clear_data_title">¿Borrar todos los datos?</string>
+    <string name="clear_data_message">Elimina todas las sesiones y disparos guardados en este teléfono. Esto no afecta al reloj — sincroniza después para restaurarlos desde allí. Esta acción no se puede deshacer.</string>
+    <string name="clear_data_confirm">Borrar</string>
+    <string name="clear_data_success">Borrado</string>
+
+    <string name="data_menu">Datos</string>
+    <string name="data_dialog_title">Exportar / Importar</string>
+    <string name="format_json">JSON</string>
+    <string name="format_csv">CSV</string>
+    <string name="export_button">Exportar</string>
+    <string name="import_button">Importar</string>
+    <string name="export_success">Exportado</string>
+    <string name="export_failed">Error al exportar</string>
+    <string name="import_success">%1$d sesiones importadas</string>
+    <string name="import_failed">Error al importar</string>
+</resources>

@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Archery Shot Counter</string>
+
+    <string name="history_empty_title">同期されたセッションはまだありません。\n腕時計でセッションを記録すると、ここに表示されます。</string>
+    <string name="sync_button">データを同期</string>
+    <string name="sync_button_syncing">同期中…</string>
+
+    <string name="shots_count">%1$d 射</string>
+    <string name="avg_interval">平均間隔 %1$d 秒</string>
+    <string name="shots_per_end_count">1シリーズ %1$d 射</string>
+
+    <string name="edit_shots">射数</string>
+    <string name="edit_duration_min">時間（分）</string>
+    <string name="edit_shots_per_end">シリーズごとの射数</string>
+    <string name="edit_off">オフ</string>
+
+    <string name="save_button">保存</string>
+    <string name="delete_button">削除</string>
+    <string name="cancel_button">キャンセル</string>
+
+    <string name="clear_data_menu">データを消去</string>
+    <string name="clear_data_title">すべてのデータを消去しますか？</string>
+    <string name="clear_data_message">この端末に保存されているすべてのセッションと射撃記録を削除します。腕時計には影響しません — その後同期すれば腕時計から復元できます。この操作は元に戻せません。</string>
+    <string name="clear_data_confirm">消去</string>
+    <string name="clear_data_success">消去しました</string>
+
+    <string name="data_menu">データ</string>
+    <string name="data_dialog_title">エクスポート / インポート</string>
+    <string name="format_json">JSON</string>
+    <string name="format_csv">CSV</string>
+    <string name="export_button">エクスポート</string>
+    <string name="import_button">インポート</string>
+    <string name="export_success">エクスポートしました</string>
+    <string name="export_failed">エクスポートに失敗しました</string>
+    <string name="import_success">%1$d 件のセッションをインポートしました</string>
+    <string name="import_failed">インポートに失敗しました</string>
+</resources>

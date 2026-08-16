@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Archery Shot Counter</string>
+
+    <string name="history_empty_title">Henüz senkronize edilmiş oturum yok.\nSaatte bir oturum kaydedin, burada görünsün.</string>
+    <string name="sync_button">Verileri senkronize et</string>
+    <string name="sync_button_syncing">Senkronize ediliyor…</string>
+
+    <string name="shots_count">%1$d atış</string>
+    <string name="avg_interval">Atışlar arası ort. %1$d sn</string>
+    <string name="shots_per_end_count">Seri başına %1$d atış</string>
+
+    <string name="edit_shots">Atışlar</string>
+    <string name="edit_duration_min">Süre, dk</string>
+    <string name="edit_shots_per_end">Seri başına atış</string>
+    <string name="edit_off">Kapalı</string>
+
+    <string name="save_button">Kaydet</string>
+    <string name="delete_button">Sil</string>
+    <string name="cancel_button">İptal</string>
+
+    <string name="clear_data_menu">Verileri temizle</string>
+    <string name="clear_data_title">Tüm veriler temizlensin mi?</string>
+    <string name="clear_data_message">Bu telefonda depolanan her oturumu ve atışı siler. Bu, saati etkilemez — daha sonra oradan geri yüklemek için senkronize edin. Bu işlem geri alınamaz.</string>
+    <string name="clear_data_confirm">Temizle</string>
+    <string name="clear_data_success">Temizlendi</string>
+
+    <string name="data_menu">Veriler</string>
+    <string name="data_dialog_title">Dışa Aktar / İçe Aktar</string>
+    <string name="format_json">JSON</string>
+    <string name="format_csv">CSV</string>
+    <string name="export_button">Dışa aktar</string>
+    <string name="import_button">İçe aktar</string>
+    <string name="export_success">Dışa aktarıldı</string>
+    <string name="export_failed">Dışa aktarma başarısız</string>
+    <string name="import_success">%1$d oturum içe aktarıldı</string>
+    <string name="import_failed">İçe aktarma başarısız</string>
+</resources>

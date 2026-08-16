@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Archery Shot Counter</string>
+
+    <string name="history_empty_title">还没有已同步的训练。\n在手表上记录一次训练即可在这里看到。</string>
+    <string name="sync_button">同步数据</string>
+    <string name="sync_button_syncing">同步中…</string>
+
+    <string name="shots_count">%1$d 箭</string>
+    <string name="avg_interval">平均每箭间隔 %1$d 秒</string>
+    <string name="shots_per_end_count">每系列 %1$d 箭</string>
+
+    <string name="edit_shots">箭数</string>
+    <string name="edit_duration_min">时长（分钟）</string>
+    <string name="edit_shots_per_end">每系列箭数</string>
+    <string name="edit_off">关闭</string>
+
+    <string name="save_button">保存</string>
+    <string name="delete_button">删除</string>
+    <string name="cancel_button">取消</string>
+
+    <string name="clear_data_menu">清除数据</string>
+    <string name="clear_data_title">清除全部数据？</string>
+    <string name="clear_data_message">删除此手机上存储的所有训练和箭记录。不会影响手表 — 之后同步即可从手表恢复数据。此操作无法撤销。</string>
+    <string name="clear_data_confirm">清除</string>
+    <string name="clear_data_success">已清除</string>
+
+    <string name="data_menu">数据</string>
+    <string name="data_dialog_title">导出 / 导入</string>
+    <string name="format_json">JSON</string>
+    <string name="format_csv">CSV</string>
+    <string name="export_button">导出</string>
+    <string name="import_button">导入</string>
+    <string name="export_success">已导出</string>
+    <string name="export_failed">导出失败</string>
+    <string name="import_success">已导入 %1$d 次训练</string>
+    <string name="import_failed">导入失败</string>
+</resources>

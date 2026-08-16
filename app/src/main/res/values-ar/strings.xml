@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Archery Shot Counter</string>
+
+    <string name="history_empty_title">لا توجد جلسات متزامنة بعد.\nسجّل جلسة على الساعة لتظهر هنا.</string>
+    <string name="sync_button">مزامنة البيانات</string>
+    <string name="sync_button_syncing">جارٍ المزامنة…</string>
+
+    <string name="shots_count">%1$d رمية</string>
+    <string name="avg_interval">بمعدل %1$d ث بين الرميات</string>
+    <string name="shots_per_end_count">%1$d رمية لكل سلسلة</string>
+
+    <string name="edit_shots">الرميات</string>
+    <string name="edit_duration_min">المدة، دقيقة</string>
+    <string name="edit_shots_per_end">الرميات لكل سلسلة</string>
+    <string name="edit_off">إيقاف</string>
+
+    <string name="save_button">حفظ</string>
+    <string name="delete_button">حذف</string>
+    <string name="cancel_button">إلغاء</string>
+
+    <string name="clear_data_menu">مسح البيانات</string>
+    <string name="clear_data_title">مسح كل البيانات؟</string>
+    <string name="clear_data_message">يحذف كل جلسة ورمية مخزنة على هذا الهاتف. لا يؤثر هذا على الساعة — قم بالمزامنة بعد ذلك لاستعادة البيانات منها. لا يمكن التراجع عن هذا.</string>
+    <string name="clear_data_confirm">مسح</string>
+    <string name="clear_data_success">تم المسح</string>
+
+    <string name="data_menu">البيانات</string>
+    <string name="data_dialog_title">تصدير / استيراد</string>
+    <string name="format_json">JSON</string>
+    <string name="format_csv">CSV</string>
+    <string name="export_button">تصدير</string>
+    <string name="import_button">استيراد</string>
+    <string name="export_success">تم التصدير</string>
+    <string name="export_failed">فشل التصدير</string>
+    <string name="import_success">تم استيراد %1$d جلسة</string>
+    <string name="import_failed">فشل الاستيراد</string>
+</resources>

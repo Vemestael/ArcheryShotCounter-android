@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Archery Shot Counter</string>
+
+    <string name="history_empty_title">Aucune session synchronisée pour l\'instant.\nEnregistrez une session sur la montre pour la voir ici.</string>
+    <string name="sync_button">Synchroniser les données</string>
+    <string name="sync_button_syncing">Synchronisation…</string>
+
+    <string name="shots_count">%1$d tirs</string>
+    <string name="avg_interval">Moy. %1$d s entre les tirs</string>
+    <string name="shots_per_end_count">%1$d tirs par série</string>
+
+    <string name="edit_shots">Tirs</string>
+    <string name="edit_duration_min">Durée, min</string>
+    <string name="edit_shots_per_end">Tirs par série</string>
+    <string name="edit_off">Désactivé</string>
+
+    <string name="save_button">Enregistrer</string>
+    <string name="delete_button">Supprimer</string>
+    <string name="cancel_button">Annuler</string>
+
+    <string name="clear_data_menu">Effacer les données</string>
+    <string name="clear_data_title">Effacer toutes les données ?</string>
+    <string name="clear_data_message">Supprime toutes les sessions et tous les tirs stockés sur ce téléphone. La montre n\'est pas affectée — synchronisez ensuite pour restaurer les données depuis celle-ci. Cette action est irréversible.</string>
+    <string name="clear_data_confirm">Effacer</string>
+    <string name="clear_data_success">Effacé</string>
+
+    <string name="data_menu">Données</string>
+    <string name="data_dialog_title">Exporter / Importer</string>
+    <string name="format_json">JSON</string>
+    <string name="format_csv">CSV</string>
+    <string name="export_button">Exporter</string>
+    <string name="import_button">Importer</string>
+    <string name="export_success">Exporté</string>
+    <string name="export_failed">Échec de l\'export</string>
+    <string name="import_success">%1$d sessions importées</string>
+    <string name="import_failed">Échec de l\'import</string>
+</resources>
