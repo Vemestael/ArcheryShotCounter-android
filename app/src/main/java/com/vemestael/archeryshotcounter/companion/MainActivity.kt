@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.Wearable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -46,9 +48,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Live delivery while the app is open, in addition to the manifest-declared background service. */
+    private val dataListener = DataClient.OnDataChangedListener { events ->
+        persistSessionDataEvents(this, events, dbExecutor)
+        events.release()
+        reload()
+    }
+
     override fun onResume() {
         super.onResume()
+        Wearable.getDataClient(this).addListener(dataListener)
         reload()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Wearable.getDataClient(this).removeListener(dataListener)
     }
 
     private fun reload() {
@@ -56,8 +71,10 @@ class MainActivity : ComponentActivity() {
         dbExecutor.execute {
             val loadedSessions = db.sessionDao().getAll()
             val loadedShots = loadedSessions.associate { it.id to db.shotDao().getBySession(it.id) }
-            sessions = loadedSessions
-            shotsBySession = loadedShots
+            runOnUiThread {
+                sessions = loadedSessions
+                shotsBySession = loadedShots
+            }
         }
     }
 }
