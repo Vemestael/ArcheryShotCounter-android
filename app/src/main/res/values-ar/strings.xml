@@ -6,7 +6,8 @@
     <string name="sync_button_syncing">جارٍ المزامنة…</string>
 
     <string name="shots_count">%1$d رمية</string>
-    <string name="avg_interval">بمعدل %1$d ث بين الرميات</string>
+    <string name="time_h">س</string>
+    <string name="time_m">د</string>
     <string name="shots_per_end_count">%1$d رمية لكل سلسلة</string>
     <string name="details_button">تفاصيل</string>
     <string name="unit_accel">م/ث²</string>

@@ -6,7 +6,8 @@
     <string name="sync_button_syncing">同期中…</string>
 
     <string name="shots_count">%1$d 射</string>
-    <string name="avg_interval">平均間隔 %1$d 秒</string>
+    <string name="time_h">時間</string>
+    <string name="time_m">分</string>
     <string name="shots_per_end_count">1シリーズ %1$d 射</string>
     <string name="details_button">詳細</string>
     <string name="unit_accel">m/s²</string>

@@ -6,7 +6,8 @@
     <string name="sync_button_syncing">동기화 중…</string>
 
     <string name="shots_count">%1$d발</string>
-    <string name="avg_interval">평균 %1$d초 간격</string>
+    <string name="time_h">시간</string>
+    <string name="time_m">분</string>
     <string name="shots_per_end_count">시리즈당 %1$d발</string>
     <string name="details_button">상세</string>
     <string name="unit_accel">m/s²</string>

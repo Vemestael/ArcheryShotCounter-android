@@ -6,7 +6,8 @@
     <string name="sync_button_syncing">Senkronize ediliyor…</string>
 
     <string name="shots_count">%1$d atış</string>
-    <string name="avg_interval">Atışlar arası ort. %1$d sn</string>
+    <string name="time_h">s</string>
+    <string name="time_m">dk</string>
     <string name="shots_per_end_count">Seri başına %1$d atış</string>
     <string name="details_button">Detaylar</string>
     <string name="unit_accel">m/s²</string>

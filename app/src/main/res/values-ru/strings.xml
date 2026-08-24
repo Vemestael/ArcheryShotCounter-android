@@ -6,7 +6,8 @@
     <string name="sync_button_syncing">Синхронизация…</string>
 
     <string name="shots_count">%1$d выстрелов</string>
-    <string name="avg_interval">Ср. %1$d с между выстрелами</string>
+    <string name="time_h">ч</string>
+    <string name="time_m">м</string>
     <string name="shots_per_end_count">%1$d выстрелов в серии</string>
     <string name="details_button">Детальнее</string>
     <string name="unit_accel">м/с²</string>

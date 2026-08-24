@@ -63,7 +63,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executors
-import kotlin.math.roundToInt
 
 enum class DataFormat { JSON, CSV }
 
@@ -136,7 +135,6 @@ class MainActivity : ComponentActivity() {
                     }
                     AppScreen(
                         sessions = sessions,
-                        shotsBySession = shotsBySession,
                         activeSessionId = activeSessionId,
                         isSyncing = isSyncing,
                         dataStatus = dataStatus,
@@ -395,7 +393,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppScreen(
     sessions: List<Session>,
-    shotsBySession: Map<Long, List<Shot>>,
     activeSessionId: Long?,
     isSyncing: Boolean,
     dataStatus: String?,
@@ -433,7 +430,7 @@ private fun AppScreen(
                 )
             }
             Box(modifier = Modifier.fillMaxSize()) {
-                HistoryScreen(sessions, shotsBySession, activeSessionId, isSyncing, onSync, onEditSession)
+                HistoryScreen(sessions, activeSessionId, isSyncing, onSync, onEditSession)
             }
         }
     }
@@ -462,7 +459,6 @@ private fun buildHistoryItems(sessions: List<Session>): List<HistoryListItem> {
 @Composable
 private fun HistoryScreen(
     sessions: List<Session>,
-    shotsBySession: Map<Long, List<Shot>>,
     activeSessionId: Long?,
     isSyncing: Boolean,
     onSync: () -> Unit,
@@ -484,14 +480,13 @@ private fun HistoryScreen(
         return
     }
 
-    PullToRefreshHistoryList(sessions, shotsBySession, activeSessionId, isSyncing, onSync, onEditSession)
+    PullToRefreshHistoryList(sessions, activeSessionId, isSyncing, onSync, onEditSession)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PullToRefreshHistoryList(
     sessions: List<Session>,
-    shotsBySession: Map<Long, List<Shot>>,
     activeSessionId: Long?,
     isSyncing: Boolean,
     onSync: () -> Unit,
@@ -519,7 +514,6 @@ private fun PullToRefreshHistoryList(
                     )
                     is HistoryListItem.SessionItem -> SessionCard(
                         session = item.session,
-                        shots = shotsBySession[item.session.id].orEmpty(),
                         isActive = item.session.id == activeSessionId,
                         onClick = { onEditSession(item.session) }
                     )
@@ -530,12 +524,14 @@ private fun PullToRefreshHistoryList(
 }
 
 @Composable
-private fun SessionCard(session: Session, shots: List<Shot>, isActive: Boolean, onClick: () -> Unit) {
+private fun SessionCard(session: Session, isActive: Boolean, onClick: () -> Unit) {
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     val dateFormat = remember(locale) { SimpleDateFormat("d MMM", locale) }
     val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
-    val avgIntervalSeconds = averageIntervalSeconds(shots)
+    val unitH = stringResource(R.string.time_h)
+    val unitM = stringResource(R.string.time_m)
+    val durationText = remember(session, unitH, unitM) { formatDuration(session.startTime, session.lastShotTime, unitH, unitM) }
 
     Card(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -553,19 +549,27 @@ private fun SessionCard(session: Session, shots: List<Shot>, isActive: Boolean, 
                 "${timeFormat.format(Date(session.startTime))} – ${timeFormat.format(Date(session.lastShotTime))}",
                 style = MaterialTheme.typography.bodyMedium
             )
+            Text(durationText, style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.shots_count, session.shotCount), style = MaterialTheme.typography.bodyMedium)
-            if (avgIntervalSeconds != null) {
-                Text(
-                    stringResource(R.string.avg_interval, avgIntervalSeconds),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
             if (session.shotsPerEndAtStart > 0) {
                 Text(
                     stringResource(R.string.shots_per_end_count, session.shotsPerEndAtStart),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+        }
+    }
+}
+
+private fun formatDuration(startTime: Long, endTime: Long, unitH: String, unitM: String): String {
+    val durationMin = (endTime - startTime) / 60_000L
+    return when {
+        durationMin < 1 -> "<1$unitM"
+        durationMin < 60 -> "${durationMin}$unitM"
+        else -> {
+            val h = durationMin / 60
+            val m = durationMin % 60
+            if (m == 0L) "${h}$unitH" else "${h}$unitH ${m}$unitM"
         }
     }
 }
@@ -720,10 +724,3 @@ private fun StepperRow(label: String, value: Int, onDec: () -> Unit, onInc: () -
     }
 }
 
-private fun averageIntervalSeconds(shots: List<Shot>): Int? {
-    if (shots.size < 2) return null
-    val sorted = shots.sortedBy { it.timestamp }
-    val totalMs = sorted.last().timestamp - sorted.first().timestamp
-    val intervals = sorted.size - 1
-    return ((totalMs / intervals) / 1000.0).roundToInt()
-}

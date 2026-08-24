@@ -6,7 +6,8 @@
     <string name="sync_button_syncing">Sincronizando…</string>
 
     <string name="shots_count">%1$d disparos</string>
-    <string name="avg_interval">Média de %1$d s entre disparos</string>
+    <string name="time_h">h</string>
+    <string name="time_m">min</string>
     <string name="shots_per_end_count">%1$d disparos por série</string>
     <string name="details_button">Detalhes</string>
     <string name="unit_accel">m/s²</string>
