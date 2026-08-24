@@ -8,6 +8,9 @@
     <string name="shots_count">%1$d तीर</string>
     <string name="avg_interval">औसतन %1$d सेकंड प्रति तीर</string>
     <string name="shots_per_end_count">%1$d तीर प्रति श्रृंखला</string>
+    <string name="details_button">विवरण</string>
+    <string name="unit_accel">m/s²</string>
+    <string name="shots_empty">कोई डेटा नहीं</string>
 
     <string name="edit_shots">तीर</string>
     <string name="edit_duration_min">अवधि, मिनट</string>

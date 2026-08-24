@@ -9,6 +9,7 @@ import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,8 +17,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -41,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -49,11 +53,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import com.vemestael.archeryshotcounter.R
 import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import java.io.IOException
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executors
@@ -91,6 +97,8 @@ class MainActivity : ComponentActivity() {
     private var shotsBySession by mutableStateOf<Map<Long, List<Shot>>>(emptyMap())
     private var isSyncing by mutableStateOf(false)
     private var editingSession by mutableStateOf<Session?>(null)
+    private var detailSession by mutableStateOf<Session?>(null)
+    private var activeSessionId by mutableStateOf<Long?>(null)
     private var showClearDataConfirm by mutableStateOf(false)
     private var showExportDialog by mutableStateOf(false)
     private var showImportDialog by mutableStateOf(false)
@@ -117,9 +125,19 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
+                    val detail = detailSession
+                    if (detail != null) {
+                        SessionDetailScreen(
+                            session = detail,
+                            shots = shotsBySession[detail.id].orEmpty(),
+                            onBack = { detailSession = null }
+                        )
+                        return@Surface
+                    }
                     AppScreen(
                         sessions = sessions,
                         shotsBySession = shotsBySession,
+                        activeSessionId = activeSessionId,
                         isSyncing = isSyncing,
                         dataStatus = dataStatus,
                         onSync = ::syncData,
@@ -132,6 +150,7 @@ class MainActivity : ComponentActivity() {
                     editingSession?.let { session ->
                         EditSessionDialog(
                             session = session,
+                            onShowDetail = { detailSession = session; editingSession = null },
                             onSave = { saveSessionEdit(it); editingSession = null },
                             onDelete = { deleteSession(it); editingSession = null },
                             onDismiss = { editingSession = null }
@@ -170,6 +189,12 @@ class MainActivity : ComponentActivity() {
     /** Live delivery while the app is open, in addition to the manifest-declared background service. */
     private val dataListener = DataClient.OnDataChangedListener { events ->
         persistSessionDataEvents(this, events, dbExecutor)
+        events.forEach { event ->
+            if (event.type == DataEvent.TYPE_CHANGED && event.dataItem.uri.path == "/activeSession") {
+                val id = DataMapItem.fromDataItem(event.dataItem).dataMap.getLong("sessionId", -1L)
+                activeSessionId = if (id >= 0) id else null
+            }
+        }
         events.release()
         reload()
     }
@@ -226,20 +251,30 @@ class MainActivity : ComponentActivity() {
         Wearable.getDataClient(this).dataItems
             .addOnSuccessListener { buffer ->
                 dbExecutor.execute {
+                    var foundActiveId: Long? = activeSessionId
                     buffer.forEach { item ->
-                        if (item.uri.path.orEmpty().startsWith("/session")) {
-                            DataMapItem.fromDataItem(item).dataMap.getString("json")?.let { json ->
-                                try {
-                                    val (session, shots) = parseSessionJson(json)
-                                    db.mergeIncomingSession(session, shots)
-                                } catch (_: Exception) {
-                                    // skip malformed item, keep reconciling the rest
+                        when {
+                            item.uri.path.orEmpty().startsWith("/session") -> {
+                                DataMapItem.fromDataItem(item).dataMap.getString("json")?.let { json ->
+                                    try {
+                                        val (session, shots) = parseSessionJson(json)
+                                        db.mergeIncomingSession(session, shots)
+                                    } catch (_: Exception) {
+                                        // skip malformed item, keep reconciling the rest
+                                    }
                                 }
+                            }
+                            item.uri.path == "/activeSession" -> {
+                                val id = DataMapItem.fromDataItem(item).dataMap.getLong("sessionId", -1L)
+                                foundActiveId = if (id >= 0) id else null
                             }
                         }
                     }
                     buffer.release()
-                    runOnUiThread { reload { isSyncing = false } }
+                    runOnUiThread {
+                        activeSessionId = foundActiveId
+                        reload { isSyncing = false }
+                    }
                 }
             }
             .addOnFailureListener { isSyncing = false }
@@ -361,6 +396,7 @@ class MainActivity : ComponentActivity() {
 private fun AppScreen(
     sessions: List<Session>,
     shotsBySession: Map<Long, List<Shot>>,
+    activeSessionId: Long?,
     isSyncing: Boolean,
     dataStatus: String?,
     onSync: () -> Unit,
@@ -397,16 +433,37 @@ private fun AppScreen(
                 )
             }
             Box(modifier = Modifier.fillMaxSize()) {
-                HistoryScreen(sessions, shotsBySession, isSyncing, onSync, onEditSession)
+                HistoryScreen(sessions, shotsBySession, activeSessionId, isSyncing, onSync, onEditSession)
             }
         }
     }
+}
+
+private sealed class HistoryListItem {
+    data class SessionItem(val session: Session) : HistoryListItem()
+    data class YearLabel(val year: Int) : HistoryListItem()
+}
+
+private fun buildHistoryItems(sessions: List<Session>): List<HistoryListItem> {
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+    val result = mutableListOf<HistoryListItem>()
+    var lastYear: Int? = null
+    sessions.forEach { session ->
+        val sessionYear = Calendar.getInstance().apply { timeInMillis = session.startTime }.get(Calendar.YEAR)
+        if (sessionYear != currentYear && sessionYear != lastYear) {
+            result.add(HistoryListItem.YearLabel(sessionYear))
+            lastYear = sessionYear
+        }
+        result.add(HistoryListItem.SessionItem(session))
+    }
+    return result
 }
 
 @Composable
 private fun HistoryScreen(
     sessions: List<Session>,
     shotsBySession: Map<Long, List<Shot>>,
+    activeSessionId: Long?,
     isSyncing: Boolean,
     onSync: () -> Unit,
     onEditSession: (Session) -> Unit
@@ -427,7 +484,7 @@ private fun HistoryScreen(
         return
     }
 
-    PullToRefreshHistoryList(sessions, shotsBySession, isSyncing, onSync, onEditSession)
+    PullToRefreshHistoryList(sessions, shotsBySession, activeSessionId, isSyncing, onSync, onEditSession)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -435,10 +492,12 @@ private fun HistoryScreen(
 private fun PullToRefreshHistoryList(
     sessions: List<Session>,
     shotsBySession: Map<Long, List<Shot>>,
+    activeSessionId: Long?,
     isSyncing: Boolean,
     onSync: () -> Unit,
     onEditSession: (Session) -> Unit
 ) {
+    val historyItems = remember(sessions) { buildHistoryItems(sessions) }
     PullToRefreshBox(isRefreshing = isSyncing, onRefresh = onSync, modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
@@ -446,15 +505,32 @@ private fun PullToRefreshHistoryList(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(sessions, key = { it.id }) { session ->
-                SessionCard(session, shotsBySession[session.id].orEmpty(), onClick = { onEditSession(session) })
+            items(historyItems, key = { item ->
+                when (item) {
+                    is HistoryListItem.SessionItem -> item.session.id
+                    is HistoryListItem.YearLabel -> "year-${item.year}"
+                }
+            }) { item ->
+                when (item) {
+                    is HistoryListItem.YearLabel -> Text(
+                        text = item.year.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    is HistoryListItem.SessionItem -> SessionCard(
+                        session = item.session,
+                        shots = shotsBySession[item.session.id].orEmpty(),
+                        isActive = item.session.id == activeSessionId,
+                        onClick = { onEditSession(item.session) }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SessionCard(session: Session, shots: List<Shot>, onClick: () -> Unit) {
+private fun SessionCard(session: Session, shots: List<Shot>, isActive: Boolean, onClick: () -> Unit) {
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     val dateFormat = remember(locale) { SimpleDateFormat("d MMM", locale) }
@@ -463,7 +539,16 @@ private fun SessionCard(session: Session, shots: List<Shot>, onClick: () -> Unit
 
     Card(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(dateFormat.format(Date(session.startTime)), style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (isActive) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(color = Color(0xFF4CAF50), shape = CircleShape)
+                    )
+                }
+                Text(dateFormat.format(Date(session.startTime)), style = MaterialTheme.typography.titleMedium)
+            }
             Text(
                 "${timeFormat.format(Date(session.startTime))} – ${timeFormat.format(Date(session.lastShotTime))}",
                 style = MaterialTheme.typography.bodyMedium
@@ -488,6 +573,7 @@ private fun SessionCard(session: Session, shots: List<Shot>, onClick: () -> Unit
 @Composable
 private fun EditSessionDialog(
     session: Session,
+    onShowDetail: () -> Unit,
     onSave: (Session) -> Unit,
     onDelete: (Session) -> Unit,
     onDismiss: () -> Unit
@@ -505,6 +591,9 @@ private fun EditSessionDialog(
         title = { Text(dateFormat.format(Date(session.startTime))) },
         text = {
             Column {
+                OutlinedButton(onClick = onShowDetail, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.details_button))
+                }
                 StepperRow(stringResource(R.string.edit_shots), count, onDec = { if (count > 0) count-- }, onInc = { count++ })
                 StepperRow(stringResource(R.string.edit_duration_min), durationMinutes, onDec = { if (durationMinutes > 0) durationMinutes-- }, onInc = { durationMinutes++ })
                 StepperRow(

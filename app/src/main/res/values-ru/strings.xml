@@ -8,6 +8,9 @@
     <string name="shots_count">%1$d выстрелов</string>
     <string name="avg_interval">Ср. %1$d с между выстрелами</string>
     <string name="shots_per_end_count">%1$d выстрелов в серии</string>
+    <string name="details_button">Детальнее</string>
+    <string name="unit_accel">м/с²</string>
+    <string name="shots_empty">Нет данных</string>
 
     <string name="edit_shots">Выстрелы</string>
     <string name="edit_duration_min">Длительность, мин</string>

@@ -8,6 +8,9 @@
     <string name="shots_count">%1$d발</string>
     <string name="avg_interval">평균 %1$d초 간격</string>
     <string name="shots_per_end_count">시리즈당 %1$d발</string>
+    <string name="details_button">상세</string>
+    <string name="unit_accel">m/s²</string>
+    <string name="shots_empty">데이터 없음</string>
 
     <string name="edit_shots">발수</string>
     <string name="edit_duration_min">시간, 분</string>
