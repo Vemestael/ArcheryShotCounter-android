@@ -14,12 +14,14 @@
     <string name="shots_empty">无数据</string>
 
     <string name="edit_shots">箭数</string>
-    <string name="edit_duration_min">时长（分钟）</string>
+    <string name="edit_start_time">开始</string>
+    <string name="edit_end_time">结束</string>
     <string name="edit_shots_per_end">每系列箭数</string>
     <string name="edit_off">关闭</string>
 
     <string name="save_button">保存</string>
     <string name="delete_button">删除</string>
+    <string name="ok_button">确定</string>
     <string name="cancel_button">取消</string>
 
     <string name="clear_data_menu">清除数据</string>

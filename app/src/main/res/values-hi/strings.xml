@@ -14,12 +14,14 @@
     <string name="shots_empty">कोई डेटा नहीं</string>
 
     <string name="edit_shots">तीर</string>
-    <string name="edit_duration_min">अवधि, मिनट</string>
+    <string name="edit_start_time">शुरू</string>
+    <string name="edit_end_time">समाप्ति</string>
     <string name="edit_shots_per_end">प्रति श्रृंखला तीर</string>
     <string name="edit_off">बंद</string>
 
     <string name="save_button">सहेजें</string>
     <string name="delete_button">हटाएं</string>
+    <string name="ok_button">ठीक है</string>
     <string name="cancel_button">रद्द करें</string>
 
     <string name="clear_data_menu">डेटा साफ़ करें</string>

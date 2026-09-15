@@ -14,12 +14,14 @@
     <string name="shots_empty">Sem dados</string>
 
     <string name="edit_shots">Disparos</string>
-    <string name="edit_duration_min">Duração, min</string>
+    <string name="edit_start_time">Início</string>
+    <string name="edit_end_time">Fim</string>
     <string name="edit_shots_per_end">Disparos por série</string>
     <string name="edit_off">Desligado</string>
 
     <string name="save_button">Salvar</string>
     <string name="delete_button">Excluir</string>
+    <string name="ok_button">OK</string>
     <string name="cancel_button">Cancelar</string>
 
     <string name="clear_data_menu">Limpar dados</string>

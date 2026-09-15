@@ -14,12 +14,14 @@
     <string name="shots_empty">Aucune donnée</string>
 
     <string name="edit_shots">Tirs</string>
-    <string name="edit_duration_min">Durée, min</string>
+    <string name="edit_start_time">Début</string>
+    <string name="edit_end_time">Fin</string>
     <string name="edit_shots_per_end">Tirs par série</string>
     <string name="edit_off">Désactivé</string>
 
     <string name="save_button">Enregistrer</string>
     <string name="delete_button">Supprimer</string>
+    <string name="ok_button">OK</string>
     <string name="cancel_button">Annuler</string>
 
     <string name="clear_data_menu">Effacer les données</string>

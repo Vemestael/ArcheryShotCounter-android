@@ -14,12 +14,14 @@
     <string name="shots_empty">لا توجد بيانات</string>
 
     <string name="edit_shots">الرميات</string>
-    <string name="edit_duration_min">المدة، دقيقة</string>
+    <string name="edit_start_time">البداية</string>
+    <string name="edit_end_time">النهاية</string>
     <string name="edit_shots_per_end">الرميات لكل سلسلة</string>
     <string name="edit_off">إيقاف</string>
 
     <string name="save_button">حفظ</string>
     <string name="delete_button">حذف</string>
+    <string name="ok_button">موافق</string>
     <string name="cancel_button">إلغاء</string>
 
     <string name="clear_data_menu">مسح البيانات</string>

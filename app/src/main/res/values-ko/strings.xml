@@ -14,12 +14,14 @@
     <string name="shots_empty">데이터 없음</string>
 
     <string name="edit_shots">발수</string>
-    <string name="edit_duration_min">시간, 분</string>
+    <string name="edit_start_time">시작</string>
+    <string name="edit_end_time">종료</string>
     <string name="edit_shots_per_end">시리즈당 발수</string>
     <string name="edit_off">끄기</string>
 
     <string name="save_button">저장</string>
     <string name="delete_button">삭제</string>
+    <string name="ok_button">확인</string>
     <string name="cancel_button">취소</string>
 
     <string name="clear_data_menu">데이터 지우기</string>

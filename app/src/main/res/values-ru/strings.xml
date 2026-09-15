@@ -14,12 +14,14 @@
     <string name="shots_empty">Нет данных</string>
 
     <string name="edit_shots">Выстрелы</string>
-    <string name="edit_duration_min">Длительность, мин</string>
+    <string name="edit_start_time">Начало</string>
+    <string name="edit_end_time">Конец</string>
     <string name="edit_shots_per_end">Выстрелов в серии</string>
     <string name="edit_off">Выкл</string>
 
     <string name="save_button">Сохранить</string>
     <string name="delete_button">Удалить</string>
+    <string name="ok_button">ОК</string>
     <string name="cancel_button">Отмена</string>
 
     <string name="clear_data_menu">Очистить данные</string>

@@ -14,12 +14,14 @@
     <string name="shots_empty">Veri yok</string>
 
     <string name="edit_shots">Atışlar</string>
-    <string name="edit_duration_min">Süre, dk</string>
+    <string name="edit_start_time">Başlangıç</string>
+    <string name="edit_end_time">Bitiş</string>
     <string name="edit_shots_per_end">Seri başına atış</string>
     <string name="edit_off">Kapalı</string>
 
     <string name="save_button">Kaydet</string>
     <string name="delete_button">Sil</string>
+    <string name="ok_button">Tamam</string>
     <string name="cancel_button">İptal</string>
 
     <string name="clear_data_menu">Verileri temizle</string>

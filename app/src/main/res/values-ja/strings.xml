@@ -14,12 +14,14 @@
     <string name="shots_empty">データなし</string>
 
     <string name="edit_shots">射数</string>
-    <string name="edit_duration_min">時間（分）</string>
+    <string name="edit_start_time">開始</string>
+    <string name="edit_end_time">終了</string>
     <string name="edit_shots_per_end">シリーズごとの射数</string>
     <string name="edit_off">オフ</string>
 
     <string name="save_button">保存</string>
     <string name="delete_button">削除</string>
+    <string name="ok_button">OK</string>
     <string name="cancel_button">キャンセル</string>
 
     <string name="clear_data_menu">データを消去</string>

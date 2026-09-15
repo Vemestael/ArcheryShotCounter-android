@@ -9,21 +9,32 @@ import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,9 +47,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,8 +63,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.edit
 import com.vemestael.archeryshotcounter.R
 import com.google.android.gms.wearable.DataClient
@@ -62,6 +79,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.Executors
 
 enum class DataFormat { JSON, CSV }
@@ -583,12 +601,13 @@ private fun EditSessionDialog(
     onDismiss: () -> Unit
 ) {
     var count by remember { mutableIntStateOf(session.shotCount) }
-    var durationMinutes by remember {
-        mutableIntStateOf((((session.lastShotTime - session.startTime) / 60_000L).toInt()).coerceAtLeast(0))
-    }
+    var startTime by remember { mutableLongStateOf(session.startTime) }
+    var endTime by remember { mutableLongStateOf(session.lastShotTime) }
     var shotsPerEnd by remember { mutableIntStateOf(session.shotsPerEndAtStart) }
     val locale = LocalConfiguration.current.locales[0]
     val dateFormat = remember(session.startTime, locale) { SimpleDateFormat("d MMM", locale) }
+    val context = LocalContext.current
+    val is24Hour = remember(context) { android.text.format.DateFormat.is24HourFormat(context) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -599,7 +618,20 @@ private fun EditSessionDialog(
                     Text(stringResource(R.string.details_button))
                 }
                 StepperRow(stringResource(R.string.edit_shots), count, onDec = { if (count > 0) count-- }, onInc = { count++ })
-                StepperRow(stringResource(R.string.edit_duration_min), durationMinutes, onDec = { if (durationMinutes > 0) durationMinutes-- }, onInc = { durationMinutes++ })
+                DateTimeField(
+                    label = stringResource(R.string.edit_start_time),
+                    millis = startTime,
+                    locale = locale,
+                    is24Hour = is24Hour,
+                    onChange = { startTime = it }
+                )
+                DateTimeField(
+                    label = stringResource(R.string.edit_end_time),
+                    millis = endTime,
+                    locale = locale,
+                    is24Hour = is24Hour,
+                    onChange = { endTime = it }
+                )
                 StepperRow(
                     stringResource(R.string.edit_shots_per_end),
                     shotsPerEnd,
@@ -614,7 +646,8 @@ private fun EditSessionDialog(
                 onSave(
                     session.copy(
                         shotCount = count,
-                        lastShotTime = session.startTime + durationMinutes * 60_000L,
+                        startTime = startTime,
+                        lastShotTime = endTime,
                         shotsPerEndAtStart = shotsPerEnd
                     )
                 )
@@ -627,6 +660,197 @@ private fun EditSessionDialog(
             }
         }
     )
+}
+
+/** DatePickerState represents the picked date as UTC-midnight millis regardless of the device's
+ * timezone, so the calendar-date it reports has to be read back out via a UTC Calendar and
+ * re-combined with the wall-clock time-of-day through a local one — mixing the two directly
+ * would shift the date by the timezone offset. */
+private fun utcMidnightOf(localMillis: Long): Long {
+    val local = Calendar.getInstance().apply { timeInMillis = localMillis }
+    val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+    utc.clear()
+    utc.set(local.get(Calendar.YEAR), local.get(Calendar.MONTH), local.get(Calendar.DAY_OF_MONTH))
+    return utc.timeInMillis
+}
+
+private fun combineDateAndTime(utcMidnightMillis: Long, hour: Int, minute: Int): Long {
+    val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utcMidnightMillis }
+    val local = Calendar.getInstance().apply {
+        clear()
+        set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH), hour, minute)
+    }
+    return local.timeInMillis
+}
+
+private enum class PickerStep { DATE, TIME }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateTimeField(
+    label: String,
+    millis: Long,
+    locale: Locale,
+    is24Hour: Boolean,
+    onChange: (Long) -> Unit
+) {
+    var step by remember { mutableStateOf<PickerStep?>(null) }
+    var pendingDateMillis by remember { mutableLongStateOf(0L) }
+    val format = remember(locale) { SimpleDateFormat("d MMM, HH:mm", locale) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text(label, modifier = Modifier.weight(1f))
+        OutlinedButton(onClick = { step = PickerStep.DATE }) {
+            Text(format.format(Date(millis)))
+        }
+    }
+
+    if (step == PickerStep.DATE) {
+        val dateState = rememberDatePickerState(initialSelectedDateMillis = utcMidnightOf(millis))
+        DatePickerDialog(
+            onDismissRequest = { step = null },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingDateMillis = dateState.selectedDateMillis ?: utcMidnightOf(millis)
+                    step = PickerStep.TIME
+                }) { Text(stringResource(R.string.ok_button)) }
+            },
+            dismissButton = { TextButton(onClick = { step = null }) { Text(stringResource(R.string.cancel_button)) } }
+        ) {
+            DatePicker(state = dateState)
+        }
+    }
+
+    if (step == PickerStep.TIME) {
+        val cal = remember { Calendar.getInstance().apply { timeInMillis = millis } }
+        val initialHour24 = cal.get(Calendar.HOUR_OF_DAY)
+        val (initialHour12, initialIsPm) = hour24To12(initialHour24)
+
+        var hourIndex by remember { mutableIntStateOf(if (is24Hour) initialHour24 else initialHour12 - 1) }
+        var minuteIndex by remember { mutableIntStateOf(cal.get(Calendar.MINUTE)) }
+        var periodIndex by remember { mutableIntStateOf(if (initialIsPm) 1 else 0) }
+
+        Dialog(onDismissRequest = { step = null }) {
+            Surface(shape = MaterialTheme.shapes.extraLarge) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        WheelColumn(
+                            values = if (is24Hour) (0..23).map { it.toString().padStart(2, '0') } else (1..12).map { it.toString() },
+                            selectedIndex = hourIndex,
+                            onSelectedIndexChange = { hourIndex = it },
+                            modifier = Modifier.width(56.dp)
+                        )
+                        Text(":", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 2.dp))
+                        WheelColumn(
+                            values = (0..59).map { it.toString().padStart(2, '0') },
+                            selectedIndex = minuteIndex,
+                            onSelectedIndexChange = { minuteIndex = it },
+                            modifier = Modifier.width(56.dp)
+                        )
+                        if (!is24Hour) {
+                            Spacer(modifier = Modifier.width(12.dp))
+                            WheelColumn(
+                                values = listOf("AM", "PM"),
+                                selectedIndex = periodIndex,
+                                onSelectedIndexChange = { periodIndex = it },
+                                modifier = Modifier.width(56.dp)
+                            )
+                        }
+                    }
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { step = null }) { Text(stringResource(R.string.cancel_button)) }
+                        TextButton(onClick = {
+                            val hour24 = if (is24Hour) hourIndex else hour12ToHour24(hourIndex + 1, periodIndex == 1)
+                            onChange(combineDateAndTime(pendingDateMillis, hour24, minuteIndex))
+                            step = null
+                        }) { Text(stringResource(R.string.ok_button)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Returns (hour 1-12, isPm) for a 24-hour hour value. */
+private fun hour24To12(hour24: Int): Pair<Int, Boolean> {
+    val isPm = hour24 >= 12
+    val hour12 = hour24 % 12
+    return (if (hour12 == 0) 12 else hour12) to isPm
+}
+
+private fun hour12ToHour24(hour12: Int, isPm: Boolean): Int {
+    val hour = hour12 % 12
+    return if (isPm) hour + 12 else hour
+}
+
+private const val WHEEL_ITEM_HEIGHT_DP = 40
+private const val WHEEL_VISIBLE_COUNT = 5
+
+/** A scrolling drum/wheel picker: snaps to whichever item sits nearest the centered highlight
+ * band. Built by hand rather than pulling in a picker library or Material3's clock-dial
+ * TimePicker, which is awkward to operate precisely — matches how charts elsewhere in this app
+ * are hand-rolled on Canvas instead of via a dependency. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun WheelColumn(
+    values: List<String>,
+    selectedIndex: Int,
+    onSelectedIndexChange: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val itemHeight = WHEEL_ITEM_HEIGHT_DP.dp
+    val visibleHeight = itemHeight * WHEEL_VISIBLE_COUNT
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex)
+    val flingBehavior = rememberSnapFlingBehavior(listState)
+
+    val centerIndex by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            if (info.visibleItemsInfo.isEmpty()) return@derivedStateOf selectedIndex
+            val center = (info.viewportStartOffset + info.viewportEndOffset) / 2
+            info.visibleItemsInfo.minByOrNull { kotlin.math.abs((it.offset + it.size / 2) - center) }?.index ?: selectedIndex
+        }
+    }
+
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (!listState.isScrollInProgress) onSelectedIndexChange(centerIndex)
+    }
+
+    Box(modifier = modifier.height(visibleHeight), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(itemHeight)
+                .background(Color(0xFF333333), RoundedCornerShape(8.dp))
+        )
+        LazyColumn(
+            state = listState,
+            flingBehavior = flingBehavior,
+            contentPadding = PaddingValues(vertical = (visibleHeight - itemHeight) / 2),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            itemsIndexed(values) { index, label ->
+                val selected = index == centerIndex
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(itemHeight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = if (selected) 22.sp else 16.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (selected) MaterialTheme.colorScheme.primary else Color(0xFF8A8A8A)
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

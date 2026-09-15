@@ -14,12 +14,14 @@
     <string name="shots_empty">No data</string>
 
     <string name="edit_shots">Shots</string>
-    <string name="edit_duration_min">Duration, min</string>
+    <string name="edit_start_time">Start</string>
+    <string name="edit_end_time">End</string>
     <string name="edit_shots_per_end">Shots per end</string>
     <string name="edit_off">Off</string>
 
     <string name="save_button">Save</string>
     <string name="delete_button">Delete</string>
+    <string name="ok_button">OK</string>
     <string name="cancel_button">Cancel</string>
 
     <string name="clear_data_menu">Clear data</string>
