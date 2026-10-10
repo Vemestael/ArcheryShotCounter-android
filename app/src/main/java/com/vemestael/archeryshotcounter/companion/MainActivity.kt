@@ -182,7 +182,7 @@ class MainActivity : ComponentActivity() {
                     editingSession?.let { session ->
                         EditSessionDialog(
                             session = session,
-                            onSave = { saveSessionEdit(it); editingSession = null },
+                            onSave = { saveSessionEdit(session, it); editingSession = null },
                             onDelete = { deleteSession(it); editingSession = null },
                             onDismiss = { editingSession = null }
                         )
@@ -321,11 +321,34 @@ class MainActivity : ComponentActivity() {
             .addOnFailureListener { isSyncing = false }
     }
 
-    private fun saveSessionEdit(edited: Session) {
+    /** [original] is the session as it was before the edit dialog opened it, used only to detect
+     * what changed (shot count, narrowed start/end) so the underlying shot rows can be kept
+     * consistent with it — never persisted itself. Same reconciliation as the watch's editSession. */
+    private fun saveSessionEdit(original: Session, edited: Session) {
         val updated = edited.copy(lastModified = System.currentTimeMillis())
+        val countDelta = updated.shotCount - original.shotCount
         val db = AppDatabase.getInstance(applicationContext)
         dbExecutor.execute {
-            db.sessionDao().insertOrUpdate(updated)
+            db.runInTransaction {
+                db.sessionDao().insertOrUpdate(updated)
+                // Shots added/removed by hand through the counter (not real detections) are
+                // timestamped at the session's end so they show up in the per-shot history too.
+                if (countDelta > 0) {
+                    repeat(countDelta) {
+                        db.shotDao().insert(Shot(sessionId = updated.id, timestamp = updated.lastShotTime, magnitude = null))
+                    }
+                } else if (countDelta < 0) {
+                    db.shotDao().deleteLatest(updated.id, -countDelta)
+                }
+                // Narrowing the window (end moved earlier / start moved later) can leave shots
+                // outside it — pull those back inside instead of leaving them stranded.
+                if (updated.lastShotTime < original.lastShotTime) {
+                    db.shotDao().clampTimestampsAfter(updated.id, updated.lastShotTime)
+                }
+                if (updated.startTime > original.startTime) {
+                    db.shotDao().clampTimestampsBefore(updated.id, updated.startTime)
+                }
+            }
             syncSessionToWatch(updated, db.shotDao().getBySession(updated.id))
             runOnUiThread { reload() }
         }
@@ -690,11 +713,15 @@ private fun EditSessionDialog(
         AppButton(
             text = stringResource(R.string.save_button),
             onClick = {
+                // Same rule as the watch: an end at or before the start is treated as spilling
+                // into the next day rather than producing a negative duration.
+                val normalizedEndTime =
+                    if (endTime <= startTime) endTime + 24L * 60 * 60 * 1000 else endTime
                 onSave(
                     session.copy(
                         shotCount = count,
                         startTime = startTime,
-                        lastShotTime = endTime,
+                        lastShotTime = normalizedEndTime,
                         shotsPerEndAtStart = shotsPerEnd
                     )
                 )

@@ -32,6 +32,9 @@ interface SessionDao {
 @Dao
 interface ShotDao {
     @Insert
+    fun insert(shot: Shot)
+
+    @Insert
     fun insertAll(shots: List<Shot>)
 
     @Query("SELECT * FROM shots WHERE sessionId = :sessionId ORDER BY timestamp")
@@ -39,6 +42,17 @@ interface ShotDao {
 
     @Query("SELECT * FROM shots ORDER BY sessionId, timestamp")
     fun getAll(): List<Shot>
+
+    @Query("DELETE FROM shots WHERE id IN (SELECT id FROM shots WHERE sessionId = :sessionId ORDER BY timestamp DESC LIMIT :count)")
+    fun deleteLatest(sessionId: Long, count: Int)
+
+    /** Pulls any shot that now falls after the session's (edited-earlier) end time back to it. */
+    @Query("UPDATE shots SET timestamp = :endTime WHERE sessionId = :sessionId AND timestamp > :endTime")
+    fun clampTimestampsAfter(sessionId: Long, endTime: Long)
+
+    /** Pushes any shot that now falls before the session's (edited-later) start time up to it. */
+    @Query("UPDATE shots SET timestamp = :startTime WHERE sessionId = :sessionId AND timestamp < :startTime")
+    fun clampTimestampsBefore(sessionId: Long, startTime: Long)
 
     @Query("DELETE FROM shots WHERE sessionId = :sessionId")
     fun deleteAllForSession(sessionId: Long)
