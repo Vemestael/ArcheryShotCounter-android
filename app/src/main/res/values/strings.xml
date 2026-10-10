@@ -46,4 +46,5 @@
     <string name="theme_parchment">Parchment</string>
     <string name="history_series_size">%1$d/end</string>
     <string name="appearance_title">Appearance</string>
+    <string name="edit_end_before_start">End can\'t be before start</string>
 </resources>

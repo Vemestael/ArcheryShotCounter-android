@@ -46,4 +46,5 @@
     <string name="theme_parchment">Parşömen</string>
     <string name="history_series_size">%1$d/seri</string>
     <string name="appearance_title">Görünüm</string>
+    <string name="edit_end_before_start">Bitiş, başlangıçtan önce olamaz</string>
 </resources>

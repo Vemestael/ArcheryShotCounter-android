@@ -699,6 +699,19 @@ private fun EditSessionDialog(
             is24Hour = is24Hour,
             onChange = { endTime = it }
         )
+        // Unlike the watch, whose wheel edits only a clock time (so an end before the start
+        // there means "past midnight" and gets +24h), the phone picks the end date explicitly —
+        // an end before the start is simply invalid and blocks saving. Equal is allowed: a
+        // session with no shots or a single one legitimately has lastShotTime == startTime.
+        val endIsValid = endTime >= startTime
+        if (!endIsValid) {
+            Text(
+                text = stringResource(R.string.edit_end_before_start),
+                style = MaterialTheme.typography.bodySmall,
+                color = LocalAppPalette.current.pause,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         FieldLabel(stringResource(R.string.edit_shots))
         Stepper(value = "$count", onDecrement = { if (count > 0) count-- }, onIncrement = { count++ })
         FieldLabel(stringResource(R.string.edit_shots_per_end))
@@ -713,19 +726,16 @@ private fun EditSessionDialog(
         AppButton(
             text = stringResource(R.string.save_button),
             onClick = {
-                // Same rule as the watch: an end at or before the start is treated as spilling
-                // into the next day rather than producing a negative duration.
-                val normalizedEndTime =
-                    if (endTime <= startTime) endTime + 24L * 60 * 60 * 1000 else endTime
                 onSave(
                     session.copy(
                         shotCount = count,
                         startTime = startTime,
-                        lastShotTime = normalizedEndTime,
+                        lastShotTime = endTime,
                         shotsPerEndAtStart = shotsPerEnd
                     )
                 )
             },
+            enabled = endIsValid,
             selected = true,
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
         )

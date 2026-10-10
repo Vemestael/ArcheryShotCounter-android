@@ -46,4 +46,5 @@
     <string name="theme_parchment">Pergaminho</string>
     <string name="history_series_size">%1$d/série</string>
     <string name="appearance_title">Aparência</string>
+    <string name="edit_end_before_start">O fim não pode ser antes do início</string>
 </resources>

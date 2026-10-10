@@ -46,4 +46,5 @@
     <string name="theme_parchment">羊皮紙</string>
     <string name="history_series_size">%1$d/セット</string>
     <string name="appearance_title">外観</string>
+    <string name="edit_end_before_start">終了を開始より前にはできません</string>
 </resources>

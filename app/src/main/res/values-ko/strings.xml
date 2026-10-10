@@ -46,4 +46,5 @@
     <string name="theme_parchment">양피지</string>
     <string name="history_series_size">%1$d/세트</string>
     <string name="appearance_title">외관</string>
+    <string name="edit_end_before_start">종료는 시작보다 이전일 수 없습니다</string>
 </resources>

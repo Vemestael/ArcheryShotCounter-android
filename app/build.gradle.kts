@@ -49,6 +49,13 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // Same suffix as the watch's debug build: the Wearable Data Layer only connects apps
+        // with the same applicationId and signing key, so debug phone ↔ debug watch can sync,
+        // installed side by side with the release apps.
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

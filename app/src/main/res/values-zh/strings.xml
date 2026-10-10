@@ -46,4 +46,5 @@
     <string name="theme_parchment">羊皮纸</string>
     <string name="history_series_size">%1$d/组</string>
     <string name="appearance_title">外观</string>
+    <string name="edit_end_before_start">结束时间不能早于开始时间</string>
 </resources>

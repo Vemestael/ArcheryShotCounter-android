@@ -46,4 +46,5 @@
     <string name="theme_parchment">Пергамент</string>
     <string name="history_series_size">%1$d/серия</string>
     <string name="appearance_title">Внешний вид</string>
+    <string name="edit_end_before_start">Конец не может быть раньше начала</string>
 </resources>
