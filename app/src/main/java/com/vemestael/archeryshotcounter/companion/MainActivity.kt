@@ -633,8 +633,6 @@ private fun EditSessionDialog(
 
     AppDialog(onDismissRequest = onDismiss) {
         SectionTitle(text = dateFormat.format(Date(session.startTime)), modifier = Modifier, textAlign = TextAlign.Center)
-        FieldLabel(stringResource(R.string.edit_shots))
-        Stepper(value = "$count", onDecrement = { if (count > 0) count-- }, onIncrement = { count++ })
         DateTimeField(
             label = stringResource(R.string.edit_start_time),
             millis = startTime,
@@ -649,6 +647,8 @@ private fun EditSessionDialog(
             is24Hour = is24Hour,
             onChange = { endTime = it }
         )
+        FieldLabel(stringResource(R.string.edit_shots))
+        Stepper(value = "$count", onDecrement = { if (count > 0) count-- }, onIncrement = { count++ })
         FieldLabel(stringResource(R.string.edit_shots_per_end))
         Stepper(
             value = if (shotsPerEnd == 0) stringResource(R.string.edit_off) else "$shotsPerEnd",
@@ -656,16 +656,11 @@ private fun EditSessionDialog(
             onIncrement = { shotsPerEnd++ },
             valueFontSize = if (shotsPerEnd == 0) 16.sp else 22.sp
         )
+        // No Cancel button, same as the watch's editor: back gesture or a tap outside the
+        // dialog dismisses it (AppDialog's Dialog defaults) without saving.
         AppButton(
-            text = stringResource(R.string.delete_button),
-            onClick = { onDelete(session) },
-            destructive = true
-        )
-        DialogActions(
-            dismissText = stringResource(R.string.cancel_button),
-            onDismiss = onDismiss,
-            confirmText = stringResource(R.string.save_button),
-            onConfirm = {
+            text = stringResource(R.string.save_button),
+            onClick = {
                 onSave(
                     session.copy(
                         shotCount = count,
@@ -674,7 +669,14 @@ private fun EditSessionDialog(
                         shotsPerEndAtStart = shotsPerEnd
                     )
                 )
-            }
+            },
+            selected = true,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+        )
+        AppButton(
+            text = stringResource(R.string.delete_button),
+            onClick = { onDelete(session) },
+            destructive = true
         )
     }
 }
