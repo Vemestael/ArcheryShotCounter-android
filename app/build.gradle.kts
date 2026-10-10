@@ -38,6 +38,9 @@ android {
         }
     }
 
+    // See the watch's app/build.gradle.kts for why applicationIdSuffix lives in the flavor
+    // dimension below, not here: "debug"/"release" controls signing + minification only, not
+    // whether the app installs alongside the production one.
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -49,12 +52,25 @@ android {
                 "proguard-rules.pro"
             )
         }
-        // Same suffix as the watch's debug build: the Wearable Data Layer only connects apps
-        // with the same applicationId and signing key, so debug phone ↔ debug watch can sync,
-        // installed side by side with the release apps.
         debug {
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
+            // No applicationIdSuffix here — see the flavor dimension below.
+        }
+    }
+
+    flavorDimensions += "install"
+    productFlavors {
+        // The Play-distributed shape: no suffix, same applicationId as the production app.
+        create("store") {
+            dimension = "install"
+        }
+        // Same suffix as the watch's `local` flavor: the Wearable Data Layer only connects apps
+        // with the same applicationId and signing key, so local phone ↔ local watch can sync,
+        // installed side by side with the store apps regardless of debug/release buildType.
+        create("local") {
+            dimension = "install"
+            applicationIdSuffix = ".local"
+            versionNameSuffix = "-local"
+            resValue("string", "app_name", "Archery Shot Counter (Local)")
         }
     }
     compileOptions {
@@ -63,6 +79,7 @@ android {
     }
     buildFeatures {
         compose = true
+        resValues = true
     }
 }
 
