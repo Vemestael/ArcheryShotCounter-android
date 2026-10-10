@@ -7,7 +7,6 @@
 
     <string name="time_h">s</string>
     <string name="time_m">dk</string>
-    <string name="unit_accel">m/s²</string>
     <string name="shots_empty">Veri yok</string>
 
     <string name="edit_shots">Atışlar</string>

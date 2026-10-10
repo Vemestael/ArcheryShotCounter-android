@@ -7,7 +7,6 @@
 
     <string name="time_h">ч</string>
     <string name="time_m">м</string>
-    <string name="unit_accel">м/с²</string>
     <string name="shots_empty">Нет данных</string>
 
     <string name="edit_shots">Выстрелы</string>

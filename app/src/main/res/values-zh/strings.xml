@@ -7,7 +7,6 @@
 
     <string name="time_h">小时</string>
     <string name="time_m">分</string>
-    <string name="unit_accel">m/s²</string>
     <string name="shots_empty">无数据</string>
 
     <string name="edit_shots">箭数</string>

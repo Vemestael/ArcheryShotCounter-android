@@ -7,7 +7,6 @@
 
     <string name="time_h">시간</string>
     <string name="time_m">분</string>
-    <string name="unit_accel">m/s²</string>
     <string name="shots_empty">데이터 없음</string>
 
     <string name="edit_shots">발수</string>

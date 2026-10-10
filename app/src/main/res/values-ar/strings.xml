@@ -7,7 +7,6 @@
 
     <string name="time_h">س</string>
     <string name="time_m">د</string>
-    <string name="unit_accel">م/ث²</string>
     <string name="shots_empty">لا توجد بيانات</string>
 
     <string name="edit_shots">الرميات</string>

@@ -7,7 +7,6 @@
 
     <string name="time_h">घं</string>
     <string name="time_m">मि</string>
-    <string name="unit_accel">m/s²</string>
     <string name="shots_empty">कोई डेटा नहीं</string>
 
     <string name="edit_shots">तीर</string>

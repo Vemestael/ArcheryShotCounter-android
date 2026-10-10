@@ -1,6 +1,11 @@
 package com.vemestael.archeryshotcounter.companion
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +40,6 @@ fun SessionDetailScreen(session: Session, shots: List<Shot>, onBack: () -> Unit)
     val palette = LocalAppPalette.current
     val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
     val dateFormat = remember(locale) { SimpleDateFormat("d MMM", locale) }
-    val unitAccel = stringResource(R.string.unit_accel)
     val sortedShots = remember(shots) { shots.sortedByDescending { it.timestamp } }
     val totalShots = sortedShots.size
 
@@ -52,26 +56,38 @@ fun SessionDetailScreen(session: Session, shots: List<Shot>, onBack: () -> Unit)
             AppList(modifier = Modifier.fillMaxSize().padding(padding), verticalSpacing = 8.dp) {
                 itemsIndexed(sortedShots, key = { _, shot -> shot.id }) { index, shot ->
                     val shotNumber = totalShots - index
-                    AppCard(contentPadding = PaddingValues(12.dp)) {
-                        Text(
-                            text = "#$shotNumber",
-                            fontFamily = IbmPlexMono,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = palette.textMuted
-                        )
-                        Text(
-                            text = timeFormat.format(Date(shot.timestamp)),
-                            fontFamily = IbmPlexMono,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = palette.text
-                        )
-                        Text(
-                            text = if (shot.magnitude != null) "↑ ${"%.1f".format(shot.magnitude)} $unitAccel" else "—",
-                            fontFamily = IbmPlexMono,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (shot.magnitude != null) palette.accent else palette.textMuted
-                        )
+                    // One row per shot, same as the watch: number, time, magnitude.
+                    AppCard(
+                        cornerRadius = 28.dp,
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp)
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "#$shotNumber",
+                                fontFamily = IbmPlexMono,
+                                fontSize = 15.sp,
+                                color = palette.textDim
+                            )
+                            Text(
+                                text = timeFormat.format(Date(shot.timestamp)),
+                                fontFamily = IbmPlexMono,
+                                fontSize = 15.sp,
+                                color = palette.text,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 8.dp)
+                            )
+                            Text(
+                                text = if (shot.magnitude != null) "↑${"%.1f".format(shot.magnitude)}" else "—",
+                                fontFamily = IbmPlexMono,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (shot.magnitude != null) palette.accent else palette.textMuted,
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.defaultMinSize(minWidth = 56.dp)
+                            )
+                        }
                     }
                 }
             }

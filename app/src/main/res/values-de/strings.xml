@@ -7,7 +7,6 @@
 
     <string name="time_h">Std</string>
     <string name="time_m">Min</string>
-    <string name="unit_accel">m/s²</string>
     <string name="shots_empty">Keine Daten</string>
 
     <string name="edit_shots">Schüsse</string>
