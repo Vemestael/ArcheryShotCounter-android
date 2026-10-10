@@ -18,7 +18,6 @@
     <string name="save_button">Сохранить</string>
     <string name="delete_button">Удалить</string>
     <string name="ok_button">ОК</string>
-    <string name="cancel_button">Отмена</string>
 
     <string name="clear_data_menu">Очистить данные</string>
     <string name="clear_data_title">Очистить все данные?</string>

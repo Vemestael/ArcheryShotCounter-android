@@ -74,8 +74,7 @@ import kotlin.math.abs
  * buttons with dark text; neutral buttons with dim text), built on phone Material3 instead of Wear
  * Material3, so the two apps stay visually unified and every size lives in one place. Wear-only
  * concerns (TransformingLazyColumn scope/transformation params, round-bezel width caps, TimeText)
- * are dropped; phone-only pieces (top bar, card, list with pull-to-refresh, dialog action row,
- * wheel picker) are added at the bottom.
+ * are dropped; phone-only pieces (top bar, card, list with pull-to-refresh, wheel picker) are added at the bottom.
  */
 
 /** Minimum height of every [AppButton] — Material's 48dp touch-target minimum, same as the watch. */
@@ -479,8 +478,8 @@ fun ListBottomSpacer(height: Dp = 16.dp) {
 
 /**
  * The rounded, scrollable card every dialog opens: clipped corners, elevated background,
- * centered content with consistent vertical spacing. End it with [DialogActions] for the usual
- * cancel/confirm pair.
+ * centered content with consistent vertical spacing. No Cancel button by convention — the back
+ * gesture or a tap outside dismisses it via [onDismissRequest], same as the watch's dialogs.
  */
 @Composable
 fun AppDialog(
@@ -515,34 +514,6 @@ fun DialogText(text: String, modifier: Modifier = Modifier) {
         textAlign = TextAlign.Center,
         modifier = modifier
     )
-}
-
-/**
- * The cancel/confirm pair every dialog ends on: a neutral [AppButton] and an accent one side by side
- * (or a destructive one when [destructive], e.g. Clear data / Delete). Omit [confirmText] for a
- * dialog whose only action is dismissing it.
- */
-@Composable
-fun DialogActions(
-    dismissText: String,
-    onDismiss: () -> Unit,
-    confirmText: String? = null,
-    onConfirm: () -> Unit = {},
-    destructive: Boolean = false,
-    modifier: Modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        AppButton(text = dismissText, onClick = onDismiss, modifier = Modifier.weight(1f))
-        if (confirmText != null) {
-            AppButton(
-                text = confirmText,
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f),
-                selected = !destructive,
-                destructive = destructive
-            )
-        }
-    }
 }
 
 /**

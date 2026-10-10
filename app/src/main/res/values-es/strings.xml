@@ -18,7 +18,6 @@
     <string name="save_button">Guardar</string>
     <string name="delete_button">Eliminar</string>
     <string name="ok_button">Aceptar</string>
-    <string name="cancel_button">Cancelar</string>
 
     <string name="clear_data_menu">Borrar datos</string>
     <string name="clear_data_title">¿Borrar todos los datos?</string>

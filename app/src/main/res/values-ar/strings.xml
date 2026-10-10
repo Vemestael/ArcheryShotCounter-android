@@ -18,7 +18,6 @@
     <string name="save_button">حفظ</string>
     <string name="delete_button">حذف</string>
     <string name="ok_button">موافق</string>
-    <string name="cancel_button">إلغاء</string>
 
     <string name="clear_data_menu">مسح البيانات</string>
     <string name="clear_data_title">مسح كل البيانات؟</string>

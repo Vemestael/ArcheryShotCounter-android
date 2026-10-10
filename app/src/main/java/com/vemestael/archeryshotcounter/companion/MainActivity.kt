@@ -63,7 +63,6 @@ import com.vemestael.archeryshotcounter.companion.theme.AppDialog
 import com.vemestael.archeryshotcounter.companion.theme.AppList
 import com.vemestael.archeryshotcounter.companion.theme.AppScreen
 import com.vemestael.archeryshotcounter.companion.theme.ArcheryShotCounterTheme
-import com.vemestael.archeryshotcounter.companion.theme.DialogActions
 import com.vemestael.archeryshotcounter.companion.theme.DialogText
 import com.vemestael.archeryshotcounter.companion.theme.EditButton
 import com.vemestael.archeryshotcounter.companion.theme.IbmPlexMono
@@ -815,13 +814,6 @@ private fun DateTimeField(
                     selected = true,
                     modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
                 )
-            },
-            dismissButton = {
-                AppButton(
-                    text = stringResource(R.string.cancel_button),
-                    onClick = { step = null },
-                    modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
-                )
             }
         ) {
             DatePicker(
@@ -872,15 +864,15 @@ private fun DateTimeField(
                     )
                 }
             }
-            DialogActions(
-                dismissText = stringResource(R.string.cancel_button),
-                onDismiss = { step = null },
-                confirmText = stringResource(R.string.ok_button),
-                onConfirm = {
+            AppButton(
+                text = stringResource(R.string.ok_button),
+                onClick = {
                     val hour24 = if (is24Hour) hourIndex else hour12ToHour24(hourIndex + 1, periodIndex == 1)
                     onChange(combineDateAndTime(pendingDateMillis, hour24, minuteIndex))
                     step = null
-                }
+                },
+                selected = true,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
             )
         }
     }
@@ -903,12 +895,11 @@ private fun ClearDataConfirmDialog(onConfirm: () -> Unit, onCancel: () -> Unit) 
     AppDialog(onDismissRequest = onCancel) {
         SectionTitle(text = stringResource(R.string.clear_data_title), modifier = Modifier, textAlign = TextAlign.Center)
         DialogText(stringResource(R.string.clear_data_message))
-        DialogActions(
-            dismissText = stringResource(R.string.cancel_button),
-            onDismiss = onCancel,
-            confirmText = stringResource(R.string.clear_data_confirm),
-            onConfirm = onConfirm,
-            destructive = true
+        AppButton(
+            text = stringResource(R.string.clear_data_confirm),
+            onClick = onConfirm,
+            destructive = true,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
         )
     }
 }
@@ -931,18 +922,18 @@ private fun FormatChooserRow(format: DataFormat, onFormatChange: (DataFormat) ->
     }
 }
 
-/** Export and Import share one dialog shape: a title, the JSON/CSV choice and cancel/confirm. */
+/** Export and Import share one dialog shape: a title, the JSON/CSV choice and a confirm button. */
 @Composable
 private fun DataFormatDialog(title: String, onDismiss: () -> Unit, onConfirm: (DataFormat) -> Unit) {
     var format by remember { mutableStateOf(DataFormat.JSON) }
     AppDialog(onDismissRequest = onDismiss) {
         SectionTitle(text = title, modifier = Modifier, textAlign = TextAlign.Center)
         FormatChooserRow(format) { format = it }
-        DialogActions(
-            dismissText = stringResource(R.string.cancel_button),
-            onDismiss = onDismiss,
-            confirmText = title,
-            onConfirm = { onConfirm(format) }
+        AppButton(
+            text = title,
+            onClick = { onConfirm(format) },
+            selected = true,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
         )
     }
 }
@@ -977,7 +968,6 @@ private fun LanguagePickerDialog(
                 }
             }
         }
-        DialogActions(dismissText = stringResource(R.string.cancel_button), onDismiss = onDismiss)
     }
 }
 

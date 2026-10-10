@@ -18,7 +18,6 @@
     <string name="save_button">Kaydet</string>
     <string name="delete_button">Sil</string>
     <string name="ok_button">Tamam</string>
-    <string name="cancel_button">İptal</string>
 
     <string name="clear_data_menu">Verileri temizle</string>
     <string name="clear_data_title">Tüm veriler temizlensin mi?</string>

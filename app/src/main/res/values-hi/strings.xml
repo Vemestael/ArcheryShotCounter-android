@@ -18,7 +18,6 @@
     <string name="save_button">सहेजें</string>
     <string name="delete_button">हटाएं</string>
     <string name="ok_button">ठीक है</string>
-    <string name="cancel_button">रद्द करें</string>
 
     <string name="clear_data_menu">डेटा साफ़ करें</string>
     <string name="clear_data_title">सारा डेटा साफ़ करें?</string>
