@@ -5,11 +5,8 @@
     <string name="sync_button">مزامنة البيانات</string>
     <string name="sync_button_syncing">جارٍ المزامنة…</string>
 
-    <string name="shots_count">%1$d رمية</string>
     <string name="time_h">س</string>
     <string name="time_m">د</string>
-    <string name="shots_per_end_count">%1$d رمية لكل سلسلة</string>
-    <string name="details_button">تفاصيل</string>
     <string name="unit_accel">م/ث²</string>
     <string name="shots_empty">لا توجد بيانات</string>
 
@@ -41,4 +38,12 @@
 
     <string name="lang_menu">اللغة</string>
     <string name="lang_system">النظام</string>
+
+    <string name="theme_brass">نحاس أصفر</string>
+    <string name="theme_forest">غابة</string>
+    <string name="theme_target">الهدف</string>
+    <string name="theme_steel">فولاذ</string>
+    <string name="theme_neon">نيون</string>
+    <string name="theme_parchment">رق</string>
+    <string name="history_series_size">%1$d/سلسلة</string>
 </resources>

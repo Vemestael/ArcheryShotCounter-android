@@ -9,48 +9,28 @@ import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -64,16 +44,34 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.core.content.edit
-import com.vemestael.archeryshotcounter.R
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
+import com.vemestael.archeryshotcounter.R
+import com.vemestael.archeryshotcounter.companion.theme.AppButton
+import com.vemestael.archeryshotcounter.companion.theme.AppCard
+import com.vemestael.archeryshotcounter.companion.theme.AppDialog
+import com.vemestael.archeryshotcounter.companion.theme.AppList
+import com.vemestael.archeryshotcounter.companion.theme.AppScreen
+import com.vemestael.archeryshotcounter.companion.theme.ArcheryShotCounterTheme
+import com.vemestael.archeryshotcounter.companion.theme.DialogActions
+import com.vemestael.archeryshotcounter.companion.theme.DialogText
+import com.vemestael.archeryshotcounter.companion.theme.EditButton
+import com.vemestael.archeryshotcounter.companion.theme.IbmPlexMono
+import com.vemestael.archeryshotcounter.companion.theme.IconTapTarget
+import com.vemestael.archeryshotcounter.companion.theme.LocalAppPalette
+import com.vemestael.archeryshotcounter.companion.theme.MoreIcon
+import com.vemestael.archeryshotcounter.companion.theme.SectionTitle
+import com.vemestael.archeryshotcounter.companion.theme.StatusIndicator
+import com.vemestael.archeryshotcounter.companion.theme.Stepper
+import com.vemestael.archeryshotcounter.companion.theme.WheelPicker
+import com.vemestael.archeryshotcounter.companion.theme.inlineTapTarget
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -140,7 +138,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AppTheme {
+            ArcheryShotCounterTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val detail = detailSession
                     if (detail != null) {
@@ -151,7 +149,7 @@ class MainActivity : ComponentActivity() {
                         )
                         return@Surface
                     }
-                    AppScreen(
+                    HomeScreen(
                         sessions = sessions,
                         activeSessionId = activeSessionId,
                         isSyncing = isSyncing,
@@ -160,13 +158,13 @@ class MainActivity : ComponentActivity() {
                         onOpenExportDialog = { showExportDialog = true },
                         onOpenImportDialog = { showImportDialog = true },
                         onOpenLanguagePicker = { showLanguagePicker = true },
+                        onShowDetail = { detailSession = it },
                         onEditSession = { editingSession = it },
                         onClearData = { showClearDataConfirm = true }
                     )
                     editingSession?.let { session ->
                         EditSessionDialog(
                             session = session,
-                            onShowDetail = { detailSession = session; editingSession = null },
                             onSave = { saveSessionEdit(it); editingSession = null },
                             onDelete = { deleteSession(it); editingSession = null },
                             onDismiss = { editingSession = null }
@@ -407,9 +405,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppScreen(
+private fun HomeScreen(
     sessions: List<Session>,
     activeSessionId: Long?,
     isSyncing: Boolean,
@@ -418,25 +415,31 @@ private fun AppScreen(
     onOpenExportDialog: () -> Unit,
     onOpenImportDialog: () -> Unit,
     onOpenLanguagePicker: () -> Unit,
+    onShowDetail: (Session) -> Unit,
     onEditSession: (Session) -> Unit,
     onClearData: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val palette = LocalAppPalette.current
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
-                actions = {
-                    TextButton(onClick = { showMenu = true }) { Text("⋮", fontSize = 28.sp) }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.export_button)) }, onClick = { showMenu = false; onOpenExportDialog() })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.import_button)) }, onClick = { showMenu = false; onOpenImportDialog() })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.lang_menu)) }, onClick = { showMenu = false; onOpenLanguagePicker() })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.clear_data_menu)) }, onClick = { showMenu = false; onClearData() })
-                    }
+    AppScreen(
+        title = stringResource(R.string.app_name),
+        actions = {
+            Box {
+                IconTapTarget(onClick = { showMenu = true }) {
+                    MoreIcon(color = palette.textDim, modifier = Modifier.size(24.dp))
                 }
-            )
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    containerColor = palette.bgElev2
+                ) {
+                    MenuItem(stringResource(R.string.export_button)) { showMenu = false; onOpenExportDialog() }
+                    MenuItem(stringResource(R.string.import_button)) { showMenu = false; onOpenImportDialog() }
+                    MenuItem(stringResource(R.string.lang_menu)) { showMenu = false; onOpenLanguagePicker() }
+                    MenuItem(stringResource(R.string.clear_data_menu), color = palette.pause) { showMenu = false; onClearData() }
+                }
+            }
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -444,14 +447,23 @@ private fun AppScreen(
                 Text(
                     text = dataStatus,
                     style = MaterialTheme.typography.bodySmall,
+                    color = palette.textDim,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
             Box(modifier = Modifier.fillMaxSize()) {
-                HistoryScreen(sessions, activeSessionId, isSyncing, onSync, onEditSession)
+                HistoryScreen(sessions, activeSessionId, isSyncing, onSync, onShowDetail, onEditSession)
             }
         }
     }
+}
+
+@Composable
+private fun MenuItem(text: String, color: Color = LocalAppPalette.current.text, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(text, style = MaterialTheme.typography.bodyLarge, color = color) },
+        onClick = onClick
+    )
 }
 
 private sealed class HistoryListItem {
@@ -480,101 +492,112 @@ private fun HistoryScreen(
     activeSessionId: Long?,
     isSyncing: Boolean,
     onSync: () -> Unit,
+    onShowDetail: (Session) -> Unit,
     onEditSession: (Session) -> Unit
 ) {
     if (sessions.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(32.dp)
+            ) {
                 Text(
                     text = stringResource(R.string.history_empty_title),
                     style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(32.dp)
+                    color = LocalAppPalette.current.textDim,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 24.dp)
                 )
-                Button(onClick = onSync, enabled = !isSyncing) {
-                    Text(stringResource(if (isSyncing) R.string.sync_button_syncing else R.string.sync_button))
-                }
+                AppButton(
+                    text = stringResource(if (isSyncing) R.string.sync_button_syncing else R.string.sync_button),
+                    onClick = onSync,
+                    enabled = !isSyncing,
+                    selected = true,
+                    modifier = Modifier
+                )
             }
         }
         return
     }
 
-    PullToRefreshHistoryList(sessions, activeSessionId, isSyncing, onSync, onEditSession)
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PullToRefreshHistoryList(
-    sessions: List<Session>,
-    activeSessionId: Long?,
-    isSyncing: Boolean,
-    onSync: () -> Unit,
-    onEditSession: (Session) -> Unit
-) {
     val historyItems = remember(sessions) { buildHistoryItems(sessions) }
-    PullToRefreshBox(isRefreshing = isSyncing, onRefresh = onSync, modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(historyItems, key = { item ->
-                when (item) {
-                    is HistoryListItem.SessionItem -> item.session.id
-                    is HistoryListItem.YearLabel -> "year-${item.year}"
-                }
-            }) { item ->
-                when (item) {
-                    is HistoryListItem.YearLabel -> Text(
-                        text = item.year.toString(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    is HistoryListItem.SessionItem -> SessionCard(
-                        session = item.session,
-                        isActive = item.session.id == activeSessionId,
-                        onClick = { onEditSession(item.session) }
-                    )
-                }
+    AppList(isRefreshing = isSyncing, onRefresh = onSync) {
+        items(historyItems, key = { item ->
+            when (item) {
+                is HistoryListItem.SessionItem -> item.session.id
+                is HistoryListItem.YearLabel -> "year-${item.year}"
+            }
+        }) { item ->
+            when (item) {
+                is HistoryListItem.YearLabel -> Text(
+                    text = item.year.toString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = LocalAppPalette.current.textMuted
+                )
+                is HistoryListItem.SessionItem -> SessionCard(
+                    session = item.session,
+                    isActive = item.session.id == activeSessionId,
+                    onClick = { onShowDetail(item.session) },
+                    onEdit = { onEditSession(item.session) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SessionCard(session: Session, isActive: Boolean, onClick: () -> Unit) {
+private fun SessionCard(session: Session, isActive: Boolean, onClick: () -> Unit, onEdit: () -> Unit) {
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
+    val palette = LocalAppPalette.current
     val dateFormat = remember(locale) { SimpleDateFormat("d MMM", locale) }
     val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
     val unitH = stringResource(R.string.time_h)
     val unitM = stringResource(R.string.time_m)
     val durationText = remember(session, unitH, unitM) { formatDuration(session.startTime, session.lastShotTime, unitH, unitM) }
 
-    Card(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (isActive) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(color = Color(0xFF4CAF50), shape = CircleShape)
+    val seriesSize = session.shotsPerEndAtStart
+    val durationAndSeriesText = if (seriesSize > 0)
+        "$durationText • ${stringResource(R.string.history_series_size, seriesSize)}"
+    else
+        durationText
+
+    // Same layout as the watch's history card: date/time/duration stacked on the left, the shot
+    // count as a big mono number on the right.
+    AppCard(onClick = onClick) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                // The pencil opens the editor; tapping anywhere else on the card opens the
+                // session's shot details — same split as the watch's history card.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusIndicator(
+                        text = dateFormat.format(Date(session.startTime)),
+                        dotColor = if (isActive) palette.active else palette.textMuted,
+                        textColor = palette.text,
+                        textStyle = MaterialTheme.typography.titleMedium
+                    )
+                    EditButton(
+                        onClick = onEdit,
+                        color = palette.textDim,
+                        modifier = Modifier.padding(start = 8.dp).inlineTapTarget(24.dp)
                     )
                 }
-                Text(dateFormat.format(Date(session.startTime)), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "${timeFormat.format(Date(session.startTime))} – ${timeFormat.format(Date(session.lastShotTime))}",
+                    fontFamily = IbmPlexMono,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = palette.text
+                )
+                Text(durationAndSeriesText, style = MaterialTheme.typography.bodyMedium, color = palette.textDim)
             }
             Text(
-                "${timeFormat.format(Date(session.startTime))} – ${timeFormat.format(Date(session.lastShotTime))}",
-                style = MaterialTheme.typography.bodyMedium
+                text = "${session.shotCount}",
+                fontFamily = IbmPlexMono,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
+                color = palette.accent,
+                modifier = Modifier.padding(start = 12.dp)
             )
-            Text(durationText, style = MaterialTheme.typography.bodyMedium)
-            Text(stringResource(R.string.shots_count, session.shotCount), style = MaterialTheme.typography.bodyMedium)
-            if (session.shotsPerEndAtStart > 0) {
-                Text(
-                    stringResource(R.string.shots_per_end_count, session.shotsPerEndAtStart),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
         }
     }
 }
@@ -595,7 +618,6 @@ private fun formatDuration(startTime: Long, endTime: Long, unitH: String, unitM:
 @Composable
 private fun EditSessionDialog(
     session: Session,
-    onShowDetail: () -> Unit,
     onSave: (Session) -> Unit,
     onDelete: (Session) -> Unit,
     onDismiss: () -> Unit
@@ -609,40 +631,41 @@ private fun EditSessionDialog(
     val context = LocalContext.current
     val is24Hour = remember(context) { android.text.format.DateFormat.is24HourFormat(context) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(dateFormat.format(Date(session.startTime))) },
-        text = {
-            Column {
-                OutlinedButton(onClick = onShowDetail, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.details_button))
-                }
-                StepperRow(stringResource(R.string.edit_shots), count, onDec = { if (count > 0) count-- }, onInc = { count++ })
-                DateTimeField(
-                    label = stringResource(R.string.edit_start_time),
-                    millis = startTime,
-                    locale = locale,
-                    is24Hour = is24Hour,
-                    onChange = { startTime = it }
-                )
-                DateTimeField(
-                    label = stringResource(R.string.edit_end_time),
-                    millis = endTime,
-                    locale = locale,
-                    is24Hour = is24Hour,
-                    onChange = { endTime = it }
-                )
-                StepperRow(
-                    stringResource(R.string.edit_shots_per_end),
-                    shotsPerEnd,
-                    onDec = { if (shotsPerEnd > 0) shotsPerEnd-- },
-                    onInc = { shotsPerEnd++ },
-                    zeroLabel = stringResource(R.string.edit_off)
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
+    AppDialog(onDismissRequest = onDismiss) {
+        SectionTitle(text = dateFormat.format(Date(session.startTime)), modifier = Modifier, textAlign = TextAlign.Center)
+        FieldLabel(stringResource(R.string.edit_shots))
+        Stepper(value = "$count", onDecrement = { if (count > 0) count-- }, onIncrement = { count++ })
+        DateTimeField(
+            label = stringResource(R.string.edit_start_time),
+            millis = startTime,
+            locale = locale,
+            is24Hour = is24Hour,
+            onChange = { startTime = it }
+        )
+        DateTimeField(
+            label = stringResource(R.string.edit_end_time),
+            millis = endTime,
+            locale = locale,
+            is24Hour = is24Hour,
+            onChange = { endTime = it }
+        )
+        FieldLabel(stringResource(R.string.edit_shots_per_end))
+        Stepper(
+            value = if (shotsPerEnd == 0) stringResource(R.string.edit_off) else "$shotsPerEnd",
+            onDecrement = { if (shotsPerEnd > 0) shotsPerEnd-- },
+            onIncrement = { shotsPerEnd++ },
+            valueFontSize = if (shotsPerEnd == 0) 16.sp else 22.sp
+        )
+        AppButton(
+            text = stringResource(R.string.delete_button),
+            onClick = { onDelete(session) },
+            destructive = true
+        )
+        DialogActions(
+            dismissText = stringResource(R.string.cancel_button),
+            onDismiss = onDismiss,
+            confirmText = stringResource(R.string.save_button),
+            onConfirm = {
                 onSave(
                     session.copy(
                         shotCount = count,
@@ -651,14 +674,19 @@ private fun EditSessionDialog(
                         shotsPerEndAtStart = shotsPerEnd
                     )
                 )
-            }) { Text(stringResource(R.string.save_button)) }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = { onDelete(session) }) { Text(stringResource(R.string.delete_button)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) }
             }
-        }
+        )
+    }
+}
+
+/** A dim label above a dialog field (stepper, date-time button). */
+@Composable
+private fun FieldLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = LocalAppPalette.current.textDim,
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
     )
 }
 
@@ -697,30 +725,41 @@ private fun DateTimeField(
     var step by remember { mutableStateOf<PickerStep?>(null) }
     var pendingDateMillis by remember { mutableLongStateOf(0L) }
     val format = remember(locale) { SimpleDateFormat("d MMM, HH:mm", locale) }
+    val palette = LocalAppPalette.current
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-    ) {
-        Text(label, modifier = Modifier.weight(1f))
-        OutlinedButton(onClick = { step = PickerStep.DATE }) {
-            Text(format.format(Date(millis)))
-        }
+    FieldLabel(label)
+    AppButton(onClick = { step = PickerStep.DATE }) {
+        Text(format.format(Date(millis)), fontFamily = IbmPlexMono)
     }
 
     if (step == PickerStep.DATE) {
         val dateState = rememberDatePickerState(initialSelectedDateMillis = utcMidnightOf(millis))
         DatePickerDialog(
             onDismissRequest = { step = null },
+            colors = DatePickerDefaults.colors(containerColor = palette.bgElev),
             confirmButton = {
-                TextButton(onClick = {
-                    pendingDateMillis = dateState.selectedDateMillis ?: utcMidnightOf(millis)
-                    step = PickerStep.TIME
-                }) { Text(stringResource(R.string.ok_button)) }
+                AppButton(
+                    text = stringResource(R.string.ok_button),
+                    onClick = {
+                        pendingDateMillis = dateState.selectedDateMillis ?: utcMidnightOf(millis)
+                        step = PickerStep.TIME
+                    },
+                    selected = true,
+                    modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
+                )
             },
-            dismissButton = { TextButton(onClick = { step = null }) { Text(stringResource(R.string.cancel_button)) } }
+            dismissButton = {
+                AppButton(
+                    text = stringResource(R.string.cancel_button),
+                    onClick = { step = null },
+                    modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
+                )
+            }
         ) {
-            DatePicker(state = dateState)
+            DatePicker(
+                state = dateState,
+                colors = DatePickerDefaults.colors(containerColor = palette.bgElev)
+            )
         }
     }
 
@@ -733,46 +772,48 @@ private fun DateTimeField(
         var minuteIndex by remember { mutableIntStateOf(cal.get(Calendar.MINUTE)) }
         var periodIndex by remember { mutableIntStateOf(if (initialIsPm) 1 else 0) }
 
-        Dialog(onDismissRequest = { step = null }) {
-            Surface(shape = MaterialTheme.shapes.extraLarge) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        WheelColumn(
-                            values = if (is24Hour) (0..23).map { it.toString().padStart(2, '0') } else (1..12).map { it.toString() },
-                            selectedIndex = hourIndex,
-                            onSelectedIndexChange = { hourIndex = it },
-                            modifier = Modifier.width(56.dp)
-                        )
-                        Text(":", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 2.dp))
-                        WheelColumn(
-                            values = (0..59).map { it.toString().padStart(2, '0') },
-                            selectedIndex = minuteIndex,
-                            onSelectedIndexChange = { minuteIndex = it },
-                            modifier = Modifier.width(56.dp)
-                        )
-                        if (!is24Hour) {
-                            Spacer(modifier = Modifier.width(12.dp))
-                            WheelColumn(
-                                values = listOf("AM", "PM"),
-                                selectedIndex = periodIndex,
-                                onSelectedIndexChange = { periodIndex = it },
-                                modifier = Modifier.width(56.dp)
-                            )
-                        }
-                    }
-                    Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { step = null }) { Text(stringResource(R.string.cancel_button)) }
-                        TextButton(onClick = {
-                            val hour24 = if (is24Hour) hourIndex else hour12ToHour24(hourIndex + 1, periodIndex == 1)
-                            onChange(combineDateAndTime(pendingDateMillis, hour24, minuteIndex))
-                            step = null
-                        }) { Text(stringResource(R.string.ok_button)) }
-                    }
+        AppDialog(onDismissRequest = { step = null }) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                WheelPicker(
+                    values = if (is24Hour) (0..23).map { it.toString().padStart(2, '0') } else (1..12).map { it.toString() },
+                    selectedIndex = hourIndex,
+                    onSelectedIndexChange = { hourIndex = it },
+                    modifier = Modifier.width(56.dp)
+                )
+                Text(
+                    ":",
+                    fontFamily = IbmPlexMono,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.accent,
+                    modifier = Modifier.padding(horizontal = 2.dp)
+                )
+                WheelPicker(
+                    values = (0..59).map { it.toString().padStart(2, '0') },
+                    selectedIndex = minuteIndex,
+                    onSelectedIndexChange = { minuteIndex = it },
+                    modifier = Modifier.width(56.dp)
+                )
+                if (!is24Hour) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    WheelPicker(
+                        values = listOf("AM", "PM"),
+                        selectedIndex = periodIndex,
+                        onSelectedIndexChange = { periodIndex = it },
+                        modifier = Modifier.width(56.dp)
+                    )
                 }
             }
+            DialogActions(
+                dismissText = stringResource(R.string.cancel_button),
+                onDismiss = { step = null },
+                confirmText = stringResource(R.string.ok_button),
+                onConfirm = {
+                    val hour24 = if (is24Hour) hourIndex else hour12ToHour24(hourIndex + 1, periodIndex == 1)
+                    onChange(combineDateAndTime(pendingDateMillis, hour24, minuteIndex))
+                    step = null
+                }
+            )
         }
     }
 }
@@ -789,111 +830,63 @@ private fun hour12ToHour24(hour12: Int, isPm: Boolean): Int {
     return if (isPm) hour + 12 else hour
 }
 
-private const val WHEEL_ITEM_HEIGHT_DP = 40
-private const val WHEEL_VISIBLE_COUNT = 5
-
-/** A scrolling drum/wheel picker: snaps to whichever item sits nearest the centered highlight
- * band. Built by hand rather than pulling in a picker library or Material3's clock-dial
- * TimePicker, which is awkward to operate precisely — matches how charts elsewhere in this app
- * are hand-rolled on Canvas instead of via a dependency. */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun WheelColumn(
-    values: List<String>,
-    selectedIndex: Int,
-    onSelectedIndexChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val itemHeight = WHEEL_ITEM_HEIGHT_DP.dp
-    val visibleHeight = itemHeight * WHEEL_VISIBLE_COUNT
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex)
-    val flingBehavior = rememberSnapFlingBehavior(listState)
-
-    val centerIndex by remember {
-        derivedStateOf {
-            val info = listState.layoutInfo
-            if (info.visibleItemsInfo.isEmpty()) return@derivedStateOf selectedIndex
-            val center = (info.viewportStartOffset + info.viewportEndOffset) / 2
-            info.visibleItemsInfo.minByOrNull { kotlin.math.abs((it.offset + it.size / 2) - center) }?.index ?: selectedIndex
-        }
-    }
-
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (!listState.isScrollInProgress) onSelectedIndexChange(centerIndex)
-    }
-
-    Box(modifier = modifier.height(visibleHeight), contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(itemHeight)
-                .background(Color(0xFF333333), RoundedCornerShape(8.dp))
-        )
-        LazyColumn(
-            state = listState,
-            flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(vertical = (visibleHeight - itemHeight) / 2),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            itemsIndexed(values) { index, label ->
-                val selected = index == centerIndex
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(itemHeight),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = label,
-                        fontSize = if (selected) 22.sp else 16.sp,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (selected) MaterialTheme.colorScheme.primary else Color(0xFF8A8A8A)
-                    )
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun ClearDataConfirmDialog(onConfirm: () -> Unit, onCancel: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.clear_data_title)) },
-        text = { Text(stringResource(R.string.clear_data_message)) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.clear_data_confirm)) } },
-        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel_button)) } }
-    )
+    AppDialog(onDismissRequest = onCancel) {
+        SectionTitle(text = stringResource(R.string.clear_data_title), modifier = Modifier, textAlign = TextAlign.Center)
+        DialogText(stringResource(R.string.clear_data_message))
+        DialogActions(
+            dismissText = stringResource(R.string.cancel_button),
+            onDismiss = onCancel,
+            confirmText = stringResource(R.string.clear_data_confirm),
+            onConfirm = onConfirm,
+            destructive = true
+        )
+    }
 }
 
 @Composable
 private fun FormatChooserRow(format: DataFormat, onFormatChange: (DataFormat) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(selected = format == DataFormat.JSON, onClick = { onFormatChange(DataFormat.JSON) }, label = { Text(stringResource(R.string.format_json)) })
-        FilterChip(selected = format == DataFormat.CSV, onClick = { onFormatChange(DataFormat.CSV) }, label = { Text(stringResource(R.string.format_csv)) })
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        AppButton(
+            text = stringResource(R.string.format_json),
+            onClick = { onFormatChange(DataFormat.JSON) },
+            selected = format == DataFormat.JSON,
+            modifier = Modifier.weight(1f)
+        )
+        AppButton(
+            text = stringResource(R.string.format_csv),
+            onClick = { onFormatChange(DataFormat.CSV) },
+            selected = format == DataFormat.CSV,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+/** Export and Import share one dialog shape: a title, the JSON/CSV choice and cancel/confirm. */
+@Composable
+private fun DataFormatDialog(title: String, onDismiss: () -> Unit, onConfirm: (DataFormat) -> Unit) {
+    var format by remember { mutableStateOf(DataFormat.JSON) }
+    AppDialog(onDismissRequest = onDismiss) {
+        SectionTitle(text = title, modifier = Modifier, textAlign = TextAlign.Center)
+        FormatChooserRow(format) { format = it }
+        DialogActions(
+            dismissText = stringResource(R.string.cancel_button),
+            onDismiss = onDismiss,
+            confirmText = title,
+            onConfirm = { onConfirm(format) }
+        )
     }
 }
 
 @Composable
 private fun ExportDialog(onDismiss: () -> Unit, onExport: (DataFormat) -> Unit) {
-    var format by remember { mutableStateOf(DataFormat.JSON) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.export_button)) },
-        text = { FormatChooserRow(format) { format = it } },
-        confirmButton = { TextButton(onClick = { onExport(format) }) { Text(stringResource(R.string.export_button)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) } }
-    )
+    DataFormatDialog(title = stringResource(R.string.export_button), onDismiss = onDismiss, onConfirm = onExport)
 }
 
 @Composable
 private fun ImportDialog(onDismiss: () -> Unit, onImport: (DataFormat) -> Unit) {
-    var format by remember { mutableStateOf(DataFormat.JSON) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.import_button)) },
-        text = { FormatChooserRow(format) { format = it } },
-        confirmButton = { TextButton(onClick = { onImport(format) }) { Text(stringResource(R.string.import_button)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) } }
-    )
+    DataFormatDialog(title = stringResource(R.string.import_button), onDismiss = onDismiss, onConfirm = onImport)
 }
 
 @Composable
@@ -902,49 +895,20 @@ private fun LanguagePickerDialog(
     onSelect: (AppLanguage) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.lang_menu)) },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                AppLanguage.entries.forEach { lang ->
-                    val mainName = if (lang == AppLanguage.SYSTEM) stringResource(R.string.lang_system) else lang.nativeName
-                    val subtitle = if (lang != AppLanguage.SYSTEM && lang.nativeName != lang.englishName) lang.englishName else null
-                    TextButton(
-                        onClick = { onSelect(lang) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                if (lang == currentLanguage) "• $mainName" else mainName,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            if (subtitle != null) {
-                                Text(subtitle, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
+    AppDialog(onDismissRequest = onDismiss, verticalSpacing = 8.dp) {
+        SectionTitle(text = stringResource(R.string.lang_menu), modifier = Modifier, textAlign = TextAlign.Center)
+        AppLanguage.entries.forEach { lang ->
+            val mainName = if (lang == AppLanguage.SYSTEM) stringResource(R.string.lang_system) else lang.nativeName
+            val subtitle = if (lang != AppLanguage.SYSTEM && lang.nativeName != lang.englishName) lang.englishName else null
+            AppButton(onClick = { onSelect(lang) }, selected = lang == currentLanguage) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(mainName, style = MaterialTheme.typography.bodyLarge)
+                    if (subtitle != null) {
+                        Text(subtitle, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) } }
-    )
-}
-
-@Composable
-private fun StepperRow(label: String, value: Int, onDec: () -> Unit, onInc: () -> Unit, zeroLabel: String? = null) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-    ) {
-        Text(label, modifier = Modifier.weight(1f))
-        OutlinedButton(onClick = onDec) { Text("−") }
-        Text(
-            if (value == 0 && zeroLabel != null) zeroLabel else "$value",
-            modifier = Modifier.padding(horizontal = 12.dp)
-        )
-        OutlinedButton(onClick = onInc) { Text("+") }
+        }
+        DialogActions(dismissText = stringResource(R.string.cancel_button), onDismiss = onDismiss)
     }
 }
-

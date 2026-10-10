@@ -5,11 +5,8 @@
     <string name="sync_button">同步数据</string>
     <string name="sync_button_syncing">同步中…</string>
 
-    <string name="shots_count">%1$d 箭</string>
     <string name="time_h">小时</string>
     <string name="time_m">分</string>
-    <string name="shots_per_end_count">每系列 %1$d 箭</string>
-    <string name="details_button">详情</string>
     <string name="unit_accel">m/s²</string>
     <string name="shots_empty">无数据</string>
 
@@ -41,4 +38,12 @@
 
     <string name="lang_menu">语言</string>
     <string name="lang_system">系统</string>
+
+    <string name="theme_brass">黄铜</string>
+    <string name="theme_forest">森林</string>
+    <string name="theme_target">靶心</string>
+    <string name="theme_steel">钢铁</string>
+    <string name="theme_neon">霓虹</string>
+    <string name="theme_parchment">羊皮纸</string>
+    <string name="history_series_size">%1$d/组</string>
 </resources>

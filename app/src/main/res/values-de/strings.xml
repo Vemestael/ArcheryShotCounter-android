@@ -5,11 +5,8 @@
     <string name="sync_button">Daten synchronisieren</string>
     <string name="sync_button_syncing">Synchronisiert…</string>
 
-    <string name="shots_count">%1$d Schüsse</string>
     <string name="time_h">Std</string>
     <string name="time_m">Min</string>
-    <string name="shots_per_end_count">%1$d Schüsse pro Serie</string>
-    <string name="details_button">Details</string>
     <string name="unit_accel">m/s²</string>
     <string name="shots_empty">Keine Daten</string>
 
@@ -41,4 +38,12 @@
 
     <string name="lang_menu">Sprache</string>
     <string name="lang_system">System</string>
+
+    <string name="theme_brass">Messing</string>
+    <string name="theme_forest">Wald</string>
+    <string name="theme_target">Zielscheibe</string>
+    <string name="theme_steel">Stahl</string>
+    <string name="theme_neon">Neon</string>
+    <string name="theme_parchment">Pergament</string>
+    <string name="history_series_size">%1$d/Serie</string>
 </resources>

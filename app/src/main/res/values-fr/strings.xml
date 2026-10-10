@@ -5,11 +5,8 @@
     <string name="sync_button">Synchroniser les données</string>
     <string name="sync_button_syncing">Synchronisation…</string>
 
-    <string name="shots_count">%1$d tirs</string>
     <string name="time_h">h</string>
     <string name="time_m">min</string>
-    <string name="shots_per_end_count">%1$d tirs par série</string>
-    <string name="details_button">Détails</string>
     <string name="unit_accel">m/s²</string>
     <string name="shots_empty">Aucune donnée</string>
 
@@ -41,4 +38,12 @@
 
     <string name="lang_menu">Langue</string>
     <string name="lang_system">Système</string>
+
+    <string name="theme_brass">Laiton</string>
+    <string name="theme_forest">Forêt</string>
+    <string name="theme_target">Cible</string>
+    <string name="theme_steel">Acier</string>
+    <string name="theme_neon">Néon</string>
+    <string name="theme_parchment">Parchemin</string>
+    <string name="history_series_size">%1$d/série</string>
 </resources>

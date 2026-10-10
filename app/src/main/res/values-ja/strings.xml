@@ -5,11 +5,8 @@
     <string name="sync_button">データを同期</string>
     <string name="sync_button_syncing">同期中…</string>
 
-    <string name="shots_count">%1$d 射</string>
     <string name="time_h">時間</string>
     <string name="time_m">分</string>
-    <string name="shots_per_end_count">1シリーズ %1$d 射</string>
-    <string name="details_button">詳細</string>
     <string name="unit_accel">m/s²</string>
     <string name="shots_empty">データなし</string>
 
@@ -41,4 +38,12 @@
 
     <string name="lang_menu">言語</string>
     <string name="lang_system">システム</string>
+
+    <string name="theme_brass">真鍮</string>
+    <string name="theme_forest">森</string>
+    <string name="theme_target">的</string>
+    <string name="theme_steel">スチール</string>
+    <string name="theme_neon">ネオン</string>
+    <string name="theme_parchment">羊皮紙</string>
+    <string name="history_series_size">%1$d/セット</string>
 </resources>
