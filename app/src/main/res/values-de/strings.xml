@@ -45,4 +45,5 @@
     <string name="theme_neon">Neon</string>
     <string name="theme_parchment">Pergament</string>
     <string name="history_series_size">%1$d/Serie</string>
+    <string name="appearance_title">Erscheinungsbild</string>
 </resources>

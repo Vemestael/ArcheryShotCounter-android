@@ -45,4 +45,5 @@
     <string name="theme_neon">Неон</string>
     <string name="theme_parchment">Пергамент</string>
     <string name="history_series_size">%1$d/серия</string>
+    <string name="appearance_title">Внешний вид</string>
 </resources>

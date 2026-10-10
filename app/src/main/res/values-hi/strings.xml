@@ -45,4 +45,5 @@
     <string name="theme_neon">नियॉन</string>
     <string name="theme_parchment">चर्मपत्र</string>
     <string name="history_series_size">%1$d/सीरीज़</string>
+    <string name="appearance_title">रूप</string>
 </resources>

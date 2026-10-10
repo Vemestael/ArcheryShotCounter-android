@@ -9,6 +9,8 @@ import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
@@ -67,6 +70,7 @@ import com.vemestael.archeryshotcounter.companion.theme.IbmPlexMono
 import com.vemestael.archeryshotcounter.companion.theme.IconTapTarget
 import com.vemestael.archeryshotcounter.companion.theme.LocalAppPalette
 import com.vemestael.archeryshotcounter.companion.theme.MoreIcon
+import com.vemestael.archeryshotcounter.companion.theme.PaletteChoice
 import com.vemestael.archeryshotcounter.companion.theme.SectionTitle
 import com.vemestael.archeryshotcounter.companion.theme.StatusIndicator
 import com.vemestael.archeryshotcounter.companion.theme.Stepper
@@ -84,6 +88,7 @@ enum class DataFormat { JSON, CSV }
 
 private const val PREFS_NAME = "settings"
 private const val KEY_LANGUAGE = "language"
+private const val KEY_PALETTE = "palette"
 
 class MainActivity : ComponentActivity() {
 
@@ -102,6 +107,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Unlike [changeLanguage], no recreate() needed — Compose just recomposes with the new palette. */
+    private fun changePalette(choice: PaletteChoice) {
+        paletteChoice = choice
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit { putString(KEY_PALETTE, choice.name) }
+    }
+
     private fun changeLanguage(lang: AppLanguage) {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit { putString(KEY_LANGUAGE, lang.code) }
         recreate()
@@ -118,6 +129,8 @@ class MainActivity : ComponentActivity() {
     private var showExportDialog by mutableStateOf(false)
     private var showImportDialog by mutableStateOf(false)
     private var showLanguagePicker by mutableStateOf(false)
+    private var showThemePicker by mutableStateOf(false)
+    private var paletteChoice by mutableStateOf(PaletteChoice.BRASS)
 
     private var dataStatus by mutableStateOf<String?>(null)
     private val dataStatusHandler = Handler(Looper.getMainLooper())
@@ -137,8 +150,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        paletteChoice = PaletteChoice.entries.find {
+            it.name == getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_PALETTE, null)
+        } ?: PaletteChoice.BRASS
         setContent {
-            ArcheryShotCounterTheme {
+            ArcheryShotCounterTheme(palette = paletteChoice.palette) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val detail = detailSession
                     if (detail != null) {
@@ -158,6 +174,7 @@ class MainActivity : ComponentActivity() {
                         onOpenExportDialog = { showExportDialog = true },
                         onOpenImportDialog = { showImportDialog = true },
                         onOpenLanguagePicker = { showLanguagePicker = true },
+                        onOpenThemePicker = { showThemePicker = true },
                         onShowDetail = { detailSession = it },
                         onEditSession = { editingSession = it },
                         onClearData = { showClearDataConfirm = true }
@@ -193,6 +210,16 @@ class MainActivity : ComponentActivity() {
                             currentLanguage = currentLanguage,
                             onSelect = { changeLanguage(it) },
                             onDismiss = { showLanguagePicker = false }
+                        )
+                    }
+                    if (showThemePicker) {
+                        ThemePickerDialog(
+                            currentPalette = paletteChoice,
+                            onSelect = { choice ->
+                                showThemePicker = false
+                                changePalette(choice)
+                            },
+                            onDismiss = { showThemePicker = false }
                         )
                     }
                 }
@@ -415,6 +442,7 @@ private fun HomeScreen(
     onOpenExportDialog: () -> Unit,
     onOpenImportDialog: () -> Unit,
     onOpenLanguagePicker: () -> Unit,
+    onOpenThemePicker: () -> Unit,
     onShowDetail: (Session) -> Unit,
     onEditSession: (Session) -> Unit,
     onClearData: () -> Unit
@@ -437,6 +465,7 @@ private fun HomeScreen(
                     MenuItem(stringResource(R.string.export_button)) { showMenu = false; onOpenExportDialog() }
                     MenuItem(stringResource(R.string.import_button)) { showMenu = false; onOpenImportDialog() }
                     MenuItem(stringResource(R.string.lang_menu)) { showMenu = false; onOpenLanguagePicker() }
+                    MenuItem(stringResource(R.string.appearance_title)) { showMenu = false; onOpenThemePicker() }
                     MenuItem(stringResource(R.string.clear_data_menu), color = palette.pause) { showMenu = false; onClearData() }
                 }
             }
@@ -912,5 +941,44 @@ private fun LanguagePickerDialog(
             }
         }
         DialogActions(dismissText = stringResource(R.string.cancel_button), onDismiss = onDismiss)
+    }
+}
+
+/** The watch's theme picker as a dialog: each palette's name and five swatches of its colors. */
+@Composable
+private fun ThemePickerDialog(
+    currentPalette: PaletteChoice,
+    onSelect: (PaletteChoice) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AppDialog(onDismissRequest = onDismiss, verticalSpacing = 8.dp) {
+        SectionTitle(text = stringResource(R.string.appearance_title), modifier = Modifier, textAlign = TextAlign.Center)
+        PaletteChoice.entries.forEach { choice ->
+            AppButton(onClick = { onSelect(choice) }, selected = currentPalette == choice) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = stringResource(choice.labelRes))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        listOf(
+                            choice.palette.bg,
+                            choice.palette.bgElev,
+                            choice.palette.accent,
+                            choice.palette.pause,
+                            choice.palette.active
+                        ).forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .border(1.dp, choice.palette.line, RoundedCornerShape(3.dp))
+                                    .background(color = color, shape = RoundedCornerShape(3.dp))
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

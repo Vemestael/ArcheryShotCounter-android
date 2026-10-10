@@ -45,4 +45,5 @@
     <string name="theme_neon">霓虹</string>
     <string name="theme_parchment">羊皮纸</string>
     <string name="history_series_size">%1$d/组</string>
+    <string name="appearance_title">外观</string>
 </resources>

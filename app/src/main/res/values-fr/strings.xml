@@ -45,4 +45,5 @@
     <string name="theme_neon">Néon</string>
     <string name="theme_parchment">Parchemin</string>
     <string name="history_series_size">%1$d/série</string>
+    <string name="appearance_title">Apparence</string>
 </resources>

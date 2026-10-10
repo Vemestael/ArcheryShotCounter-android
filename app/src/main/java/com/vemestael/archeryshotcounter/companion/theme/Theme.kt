@@ -1,5 +1,6 @@
 package com.vemestael.archeryshotcounter.companion.theme
 
+import android.app.Activity
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -7,9 +8,12 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.core.view.WindowCompat
 
 /** Not tied to system light/dark mode — the chosen [AppPalette] alone decides, as on the watch. */
 @Composable
@@ -17,6 +21,19 @@ fun ArcheryShotCounterTheme(
     palette: AppPalette = BrassPalette,
     content: @Composable () -> Unit
 ) {
+    // The app draws edge-to-edge behind the status/navigation bars, so their icons must
+    // follow the palette: dark icons on the light Parchment background, light ones otherwise.
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        val isLight = palette.bg.luminance() > 0.5f
+        SideEffect {
+            val window = (view.context as Activity).window
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = isLight
+                isAppearanceLightNavigationBars = isLight
+            }
+        }
+    }
     CompositionLocalProvider(LocalAppPalette provides palette) {
         MaterialTheme(
             colorScheme = palette.toColorScheme(),
